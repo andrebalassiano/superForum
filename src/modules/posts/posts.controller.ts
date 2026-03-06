@@ -13,7 +13,7 @@ const postsController = {
         } catch (error) {
 
             console.error(error);
-            res.status(500).json({ message: "Failed to fetch posts"});
+            res.status(500).json({ message: 'Failed to fetch posts'});
 
         }
         

@@ -1,4 +1,4 @@
-import postsRepository from "./posts.repository";
+import postsRepository from './posts.repository';
 
 const postsService = {
     async getAllPosts() {
