@@ -1,7 +1,7 @@
 import prisma from '../../core/prismaSingleton';
 import { Prisma } from '../../generated/prisma/client';
 
-const postsRepository = {
+const PostsRepository = {
     async findAll() {
         return prisma.post.findMany({
             include: {
@@ -43,7 +43,7 @@ const postsRepository = {
         })
     },
 
-    async delete(where:Prisma.PostWhereUniqueInput) {
+    async deleteById(where:Prisma.PostWhereUniqueInput) {
         return prisma.post.delete({
             where,
         })
@@ -55,4 +55,4 @@ const postsRepository = {
 }
 
 
-export default postsRepository;
+export default PostsRepository;
