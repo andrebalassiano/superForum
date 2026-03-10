@@ -1,4 +1,4 @@
-import prisma from '../../core/db/prisma';  // solve the "Cannot find module" issue. You'll have to run some console commands. 
+import prisma from '../../core/prismaSingleton';
 
 const postsRepository = {
     async findAll() {
