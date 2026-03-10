@@ -10,34 +10,44 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "sqlite"
 }
 
 
 model User {
-  id          Int       @id @default(autoincrement())
-  name        String
-  email       String    @unique
+  id          String        @id @default(uuid())
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  email       String        @unique
+  password    String
+
+
   posts       Post[]
   comments    Comment[]
+  postVotes   PostVote[]
+  commentVotes CommentVote[]
 }
 
 
 model Post {
-  id          String   @id @default(uuid())
+  id          String        @id @default(uuid())
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
   title       String
+  link        String
   content     String
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  timestamp   BigInt
 
   authorId    String  // *** FOREIGN KEY ***
   subredditId String
 
-  author    User      @relation(fields: [authorId], references: [id], onDelete: Restrict)
-  subreddit Subreddit @relation(fields: [subredditId], references: [id], onDelete: Cascade)
+  author      User          @relation(fields: [authorId], references: [id], onDelete: Restrict)
+  subreddit   Subreddit     @relation(fields: [subredditId], references: [id], onDelete: Cascade)
 
-  comments  Comment[]
-  votes     PostVote[]
+  comments    Comment[]
+  votes       PostVote[]
 
   @@index([authorId])
   @@index([subredditId])
@@ -46,32 +56,49 @@ model Post {
 
 
 model Comment {
-  id          Int       @id @default(autoincrement())
+  id          String        @id @default(uuid())
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
   content     String
-  createdAt   DateTime  @default(now())
-  postId      Int
-  post        Post      @relation(fields: [postId], references: [id])
-  authorId    Int
-  author      User      @relation(fields: [authorId], references: [id])
+  timestamp   BigInt
+
+  postId      String
+  authorId    String
+
+  post        Post          @relation(fields: [postId], references: [id])
+  author      User          @relation(fields: [authorId], references: [id])
+
+  votes       CommentVote[]
+
+  @@index([postId])
+  @@index([authorId])
+  @@index([createdAt])
 }
 
 
 model Subreddit {
-  id          Int       @id @default(autoincrement())
-  name        String    @unique
+  id          String        @id @default(uuid())
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  name        String        @unique
+
   posts       Post[]
 }
 
 
 model CommentVote { // **** not using one table for comment and post votes because polimorphism in prisma is weird.
-  id        String   @id @default(uuid())
-  commentId Int
-  userId    Int
-  value     Int
-  createdAt DateTime @default(now())
+  id          String        @id @default(uuid())
+  createdAt   DateTime      @default(now())
 
-  comment Comment @relation(fields: [commentId], references: [id], onDelete: Cascade)
-  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  value       Int
+
+  commentId   String
+  userId      String
+
+  comment     Comment       @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([commentId, userId])
   @@index([commentId])
@@ -79,6 +106,19 @@ model CommentVote { // **** not using one table for comment and post votes becau
 }
 
 
-model PostVote { // **** do this later to practice
+model PostVote {
+  id          String        @id @default(uuid())
+  createdAt   DateTime      @default(now())
 
+  value       Int
+
+  postId      String
+  userId      String
+
+  post        Post          @relation(fields: [postId], references: [id])
+  user        User          @relation(fields: [userId], references: [id])
+
+  @@unique([postId, userId])
+  @@index([postId])
+  @@index([userId])
 }
