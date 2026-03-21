@@ -41,7 +41,7 @@ const PostsService = {
         return PostsRepository.findBySubredditId(subredditId)
     },
 
-    async editPost(postId:string, dto:UpdatePostDTO) {
+    async updatePost(postId:string, dto:UpdatePostDTO) {
         const data:Prisma.PostUpdateInput = {
             title: dto.title,
             content: dto.content,
