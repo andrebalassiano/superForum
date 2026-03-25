@@ -7,10 +7,12 @@ import z from 'zod';
 const PostsService = {
 
     async getAllPosts() {
-        const posts = PostsRepository.findAll();
+        const posts = await PostsRepository.findAll();
         // this case is just a pipe, but other functions will have more logic.
 
         return posts;
+        // fine for now, may feature .map functionality later, such as pagination,
+        // sorting, filtering, caching.
     },
 
 
@@ -32,26 +34,40 @@ const PostsService = {
             },            
         }
 
-        return PostsRepository.create(data);
+        return await PostsRepository.create(data);
     },
 
-    async getPostsBySubreddit(subredditId:string) {
+    async getPostsBySubreddit(subredditId: string) {
         
-
-        return PostsRepository.findBySubredditId(subredditId)
+        return await PostsRepository.findBySubredditId(subredditId);
     },
 
-    async updatePost(postId:string, dto:UpdatePostDTO) {
-        const data:Prisma.PostUpdateInput = {
-            title: dto.title,
-            content: dto.content,
+
+    async getPostById(postId: string) {
+
+        return await PostsRepository.findById({ id: postId });
+    },
+
+
+
+    async updatePost(postId: string, dto: UpdatePostDTO) {
+        const data: Prisma.PostUpdateInput = {};
+
+        if (dto.title !== undefined) {
+            data.title = dto.title;
         }
 
-        return PostsRepository.updateById({id: postId}, data);
+        if (dto.content !== undefined) {
+            data.content = dto.content;
+        }
+
+        return await PostsRepository.updateById({ id: postId }, data);
     },
 
-    async deletePost(postId:string) {
-        return PostsRepository.deleteById;
+
+
+    async deletePost(postId: string) {
+        return await PostsRepository.deleteById({ id: postId});
     },
 }
 

@@ -14,7 +14,9 @@ export const updatePostSchema = createPostSchema.partial();
 
 
 
-
+export type IdParams = {
+    id: string;
+};
 
 export type CreatePostDTO = z.infer<typeof createPostSchema>;
 

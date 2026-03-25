@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import postsService from './posts.service';
+import { IdParams } from './posts.schemas';
 
 
 const postsController = {
@@ -14,11 +15,11 @@ const postsController = {
         } catch (error) {
             console.error(error);
 
-            return res.status(500).json({ message : 'Failed to fetch posts'});
+            return res.status(500).json({ message: 'Failed to fetch posts'});
         }
     },
 
-    async getPostById(req: Request, res: Response) {
+    async getPostById(req: Request<IdParams>, res: Response) {
         
         const { id } = req.params;
 
@@ -26,7 +27,7 @@ const postsController = {
             const post = await postsService.getPostById(id);
 
             if (!post) {
-                return res.status(404).json({ message : 'Post not found'});
+                return res.status(404).json({ message: 'Post not found'});
             }
 
             return res.status(200).json(post);
@@ -34,7 +35,7 @@ const postsController = {
         } catch (error) {
             console.error(error);
 
-            return res.status(500).json({ message : 'Failed to fetch post'});
+            return res.status(500).json({ message: 'Failed to fetch post'});
         }
     },
 
@@ -50,11 +51,11 @@ const postsController = {
         } catch (error) {
             console.error(error);
 
-            return res.status(500).json({ message : 'Failed to create post'});
+            return res.status(500).json({ message: 'Failed to create post'});
         }
     },
 
-    async updatePost(req: Request, res: Response) {
+    async updatePost(req: Request<IdParams>, res: Response) {
 
         const { id } = req.params;
 
@@ -64,7 +65,7 @@ const postsController = {
             const post = await postsService.updatePost(id, dto);
             
             if (!post) {
-                return res.status(404).json({ message : 'Post not found'});
+                return res.status(404).json({ message: 'Post not found'});
             }
             
             return res.status(200).json(post);
@@ -72,11 +73,11 @@ const postsController = {
         } catch (error) {
             console.error(error);
 
-            return res.status(500).json({ message : 'Failed to update post'});
+            return res.status(500).json({ message: 'Failed to update post'});
         }
     },
 
-    async deletePost(req: Request, res: Response) {
+    async deletePost(req: Request<IdParams>, res: Response) {
         
         const { id } = req.params;
 
@@ -84,10 +85,10 @@ const postsController = {
             const post = await postsService.deletePost(id);
 
             if (!post) {
-                return res.status(404).json({ message : 'Post not found'});
+                return res.status(404).json({ message: 'Post not found'});
             }
 
-            return res.status(200).json({ message : 'Post deleted successfully'});
+            return res.status(200).json({ message: 'Post deleted successfully'});
             // this later should be changed to .sendStatus(204);
             // on successful deletion, 204 confirms it, with no required message - as is typical in REST APIs
             // 200 with a message is easier for debugging at this stage, though
@@ -96,7 +97,7 @@ const postsController = {
         } catch (error) {
             console.error(error);
 
-            return res.status(500).json({ message : 'Failed to delete post'});
+            return res.status(500).json({ message: 'Failed to delete post'});
         }
     }
 }
