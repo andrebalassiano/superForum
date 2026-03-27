@@ -61,13 +61,38 @@ const PostsService = {
             data.content = dto.content;
         }
 
-        return await PostsRepository.updateById({ id: postId }, data);
+        try {
+            return await PostsRepository.updateById({ id: postId }, data);
+
+        } catch (error) {
+
+            if(error instanceof Prisma.PrismaClientKnownRequestError &&
+                error.code === 'P2025') {
+
+                return null;
+            }
+            
+            throw error;
+        }
     },
 
 
 
     async deletePost(postId: string) {
-        return await PostsRepository.deleteById({ id: postId});
+
+        try {
+            return await PostsRepository.deleteById({ id: postId});
+        
+        } catch (error) {
+
+            if(error instanceof Prisma.PrismaClientKnownRequestError &&
+                error.code === 'P2025') {
+                    
+                return null;
+            }
+
+            throw error;
+        }
     },
 }
 

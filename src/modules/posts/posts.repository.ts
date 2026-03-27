@@ -15,13 +15,13 @@ const PostsRepository = {
         });
     },
 
-    async create(data:Prisma.PostCreateInput) {
+    async create(data: Prisma.PostCreateInput) {
         return prisma.post.create({
             data,
         });
     },
 
-    async findById(where:Prisma.PostWhereUniqueInput) {
+    async findById(where: Prisma.PostWhereUniqueInput) {
         return prisma.post.findUnique({
             where,
         });
@@ -35,22 +35,22 @@ const PostsRepository = {
         });
     },
 
-    async updateById(where:Prisma.PostWhereUniqueInput, 
-                    data:Prisma.PostUpdateInput) {
+    async updateById(where: Prisma.PostWhereUniqueInput, 
+                    data: Prisma.PostUpdateInput) {
         return prisma.post.update({
             where,
             data,
         })
     },
 
-    async deleteById(where:Prisma.PostWhereUniqueInput) {
+    async deleteById(where: Prisma.PostWhereUniqueInput) {
         return prisma.post.delete({
             where,
         })
     },
 
 
-
+ 
 
 }
 

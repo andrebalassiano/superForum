@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import postsService from './posts.service';
-import { IdParams } from './posts.schemas';
+import { IdParamsDTO } from './posts.schemas';
 
 
 const postsController = {
@@ -19,7 +19,7 @@ const postsController = {
         }
     },
 
-    async getPostById(req: Request<IdParams>, res: Response) {
+    async getPostById(req: Request<IdParamsDTO>, res: Response) {
         
         const { id } = req.params;
 
@@ -55,7 +55,7 @@ const postsController = {
         }
     },
 
-    async updatePost(req: Request<IdParams>, res: Response) {
+    async updatePost(req: Request<IdParamsDTO>, res: Response) {
 
         const { id } = req.params;
 
@@ -64,9 +64,9 @@ const postsController = {
 
             const post = await postsService.updatePost(id, dto);
             
-            if (!post) {
-                return res.status(404).json({ message: 'Post not found'});
-            }
+            // if (!post) {
+            //     return res.status(404).json({ message: 'Post not found'});
+            // }
             
             return res.status(200).json(post);
 
@@ -77,7 +77,7 @@ const postsController = {
         }
     },
 
-    async deletePost(req: Request<IdParams>, res: Response) {
+    async deletePost(req: Request<IdParamsDTO>, res: Response) {
         
         const { id } = req.params;
 
