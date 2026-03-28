@@ -16,8 +16,8 @@ const PostsService = {
     },
 
 
-    async createPost(dto:CreatePostDTO) {
-        const data:Prisma.PostCreateInput = {
+    async createPost(dto: CreatePostDTO) {
+        const data: Prisma.PostCreateInput = {
             title: dto.title,
             link: `post/${randomUUID()}`,
             content: dto.content,

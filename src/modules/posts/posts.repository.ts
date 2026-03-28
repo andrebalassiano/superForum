@@ -7,30 +7,60 @@ const PostsRepository = {
             include: {
                 author: true,
                 subreddit: true,
-                comments: true
+                _count: {
+                    select: {
+                        comments: true,
+                    },
+                },
             },
             orderBy: {
-                createdAt: "desc"
-            }
+                createdAt: 'desc',
+            },
         });
     },
 
     async create(data: Prisma.PostCreateInput) {
         return prisma.post.create({
             data,
+            include: {
+                author: true,
+                subreddit: true,
+            },
         });
     },
 
     async findById(where: Prisma.PostWhereUniqueInput) {
         return prisma.post.findUnique({
             where,
+            include: {
+                author: true,
+                subreddit: true,
+                comments: true,
+                _count: {
+                    select: {
+                        comments: true,
+                    },
+                },
+            },
         });
     },
 
-    async findBySubredditId(subredditId:string) {
+    async findBySubredditId(subredditId: string) {
         return prisma.post.findMany({
             where: {
-                subredditId: subredditId,
+                subredditId,
+            },
+            include: {
+                author: true,
+                subreddit: true,
+                _count: {
+                    select: {
+                        comments: true,
+                    },
+                },
+            },
+            orderBy: {
+                createdAt: 'desc',
             },
         });
     },
@@ -40,18 +70,24 @@ const PostsRepository = {
         return prisma.post.update({
             where,
             data,
-        })
+            include: {
+                author: true,
+                subreddit: true,
+                comments: true,
+                _count: {
+                    select: {
+                        comments: true,
+                    },
+                },
+            },
+        });
     },
 
     async deleteById(where: Prisma.PostWhereUniqueInput) {
         return prisma.post.delete({
             where,
-        })
+        });
     },
-
-
- 
-
 }
 
 
