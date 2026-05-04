@@ -18,6 +18,14 @@ const AuthRepository = {
         });
     },
 
+    async findByUsername(username: string) {
+    return prisma.user.findUnique({
+        where: {
+            username,
+        },
+    });
+},
+
     async createUser(data: Prisma.UserCreateInput) {
         return prisma.user.create({
             data,
