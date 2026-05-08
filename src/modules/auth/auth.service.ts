@@ -1,25 +1,25 @@
-import AuthRepository from './auth.repository';
+import authRepository from './auth.repository';
 import { RegisterUserDTO, LoginUserDTO } from './auth.schemas';
 import { Prisma } from '../../generated/prisma/client';
+import { ARGON2_OPTIONS } from './auth.config';
 import argon2 from 'argon2';
 
-const AuthService = {
+
+const authService = {
     async registerUser(dto: RegisterUserDTO) {
-        const existingEmail = await AuthRepository.findByEmail(dto.email);
+        const existingEmail = await authRepository.findByEmail(dto.email);
 
         if (existingEmail) {
             return null;
         }
 
-        const existingUsername = await AuthRepository.findByUsername(dto.username);
+        const existingUsername = await authRepository.findByUsername(dto.username);
 
         if (existingUsername) {
             return null;
         }
 
-        const hashedPassword = await argon2.hash(dto.password, {
-            type: argon2.argon2id,
-        });
+        const hashedPassword = await argon2.hash(dto.password, ARGON2_OPTIONS);
 
         const data: Prisma.UserCreateInput = {
             username: dto.username,
@@ -27,7 +27,7 @@ const AuthService = {
             password: hashedPassword,
         };
 
-        const createdUser = await AuthRepository.createUser(data);
+        const createdUser = await authRepository.createUser(data);
 
         const { password, ...safeUser } = createdUser;
 
@@ -35,7 +35,7 @@ const AuthService = {
     },
 
     async loginUser(dto: LoginUserDTO) {
-        const user = await AuthRepository.findByEmail(dto.email);
+        const user = await authRepository.findByEmail(dto.email);
 
         if (!user) {
             return null;
@@ -53,7 +53,7 @@ const AuthService = {
     },
 
     async getUserById(userId: string) {
-        const user = await AuthRepository.findById(userId);
+        const user = await authRepository.findById(userId);
 
         if (!user) {
             return null;
@@ -65,4 +65,4 @@ const AuthService = {
     },
 };
 
-export default AuthService;
+export default authService;

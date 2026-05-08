@@ -1,13 +1,13 @@
-import PostsRepository from './posts.repository';
+import postsRepository from './posts.repository';
 import { CreatePostDTO, UpdatePostDTO } from './posts.schemas';
 import { Prisma } from '../../generated/prisma/client';
 import { randomUUID } from 'crypto';
 import z from 'zod';
 
-const PostsService = {
+const postsService = {
 
     async getAllPosts() {
-        const posts = await PostsRepository.findAll();
+        const posts = await postsRepository.findAll();
         // this case is just a pipe, but other functions will have more logic.
 
         return posts;
@@ -34,18 +34,18 @@ const PostsService = {
             },            
         }
 
-        return await PostsRepository.create(data);
+        return await postsRepository.create(data);
     },
 
     async getPostsBySubreddit(subredditId: string) {
         
-        return await PostsRepository.findBySubredditId(subredditId);
+        return await postsRepository.findBySubredditId(subredditId);
     },
 
 
     async getPostById(postId: string) {
 
-        return await PostsRepository.findById({ id: postId });
+        return await postsRepository.findById({ id: postId });
     },
 
 
@@ -62,7 +62,7 @@ const PostsService = {
         }
 
         try {
-            return await PostsRepository.updateById({ id: postId }, data);
+            return await postsRepository.updateById({ id: postId }, data);
 
         } catch (error) {
 
@@ -81,7 +81,7 @@ const PostsService = {
     async deletePost(postId: string) {
 
         try {
-            return await PostsRepository.deleteById({ id: postId});
+            return await postsRepository.deleteById({ id: postId});
         
         } catch (error) {
 
@@ -97,4 +97,4 @@ const PostsService = {
 }
 
 
-export default PostsService;
+export default postsService;

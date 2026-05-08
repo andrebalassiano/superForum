@@ -1,7 +1,7 @@
 import prisma from '../../core/prismaSingleton';
 import { Prisma } from '../../generated/prisma/client';
 
-const AuthRepository = {
+const authRepository = {
     async findByEmail(email: string) {
         return prisma.user.findUnique({
             where: {
@@ -47,4 +47,4 @@ const AuthRepository = {
 // deleteUserById
 
 
-export default AuthRepository;
+export default authRepository;

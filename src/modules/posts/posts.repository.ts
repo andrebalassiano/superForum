@@ -1,7 +1,7 @@
 import prisma from '../../core/prismaSingleton';
 import { Prisma } from '../../generated/prisma/client';
 
-const PostsRepository = {
+const postsRepository = {
     async findAll() {
         return prisma.post.findMany({
             include: {
@@ -91,4 +91,4 @@ const PostsRepository = {
 }
 
 
-export default PostsRepository;
+export default postsRepository;
