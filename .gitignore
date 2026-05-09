@@ -139,3 +139,9 @@ vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 
 /src/generated/prisma
+
+# Local SQLite database files
+dev.db
+dev.db-journal
+prisma/*.db
+prisma/*.db-journal
