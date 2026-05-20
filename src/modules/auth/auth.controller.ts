@@ -1,69 +1,48 @@
 import { Request, Response } from 'express';
 import authService from './auth.service';
-import { RegisterUserDTO, LoginUserDTO,IdParamsDTO } from './auth.schemas';
+import { CreateProfileDTO, IdParamsDTO } from './auth.schemas';
 
 
 const authController = {
-    async registerUser(req: Request<object, object, RegisterUserDTO>, res: Response) {
+    async createProfile(req: Request<object, object, CreateProfileDTO>, res: Response) {
 
         try {
             const dto = req.body;
 
-            const user = await authService.registerUser(dto);
+            const profile = await authService.createProfile(dto.id, dto.username);
 
-            if (!user) {
-                return res.status(409).json({ message: 'Email or username already in use' });
+            if (!profile) {
+                return res.status(409).json({ message: 'Username already in use' });
             }
 
-            return res.status(201).json(user);
+            return res.status(201).json(profile);
 
         } catch (error) {
             console.error(error);
 
-            return res.status(500).json({ message: 'Failed to register user' });
+            return res.status(500).json({ message: 'Failed to create profile' });
         }
     },
 
-    async loginUser(req: Request<object, object, LoginUserDTO>, res: Response) {
-
-        try {
-            const dto = req.body;
-
-            const user = await authService.loginUser(dto);
-
-            if (!user) {
-                return res.status(401).json({ message: 'Invalid email or password' });
-            }
-
-            return res.status(200).json(user);
-
-        } catch (error) {
-            console.error(error);
-
-            return res.status(500).json({ message: 'Failed to log in user' });
-        }
-    },
-
-    async getUserById(req: Request<IdParamsDTO>, res: Response) { // will be changed later to 'getCurrentUser' when token middleware is implemented
+    async getProfileById(req: Request<IdParamsDTO>, res: Response) {
 
         const { id } = req.params;
 
         try {
-            const user = await authService.getUserById(id);
+            const profile = await authService.getProfileById(id);
 
-            if (!user) {
-                return res.status(404).json({ message: 'User not found' });
+            if (!profile) {
+                return res.status(404).json({ message: 'Profile not found' });
             }
 
-            return res.status(200).json(user);
+            return res.status(200).json(profile);
 
         } catch (error) {
             console.error(error);
 
-            return res.status(500).json({ message: 'Failed to fetch user' });
+            return res.status(500).json({ message: 'Failed to fetch profile' });
         }
     },
-
 };
 
 export default authController;

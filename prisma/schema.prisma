@@ -1,38 +1,32 @@
 // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client"
   output   = "../src/generated/prisma"
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
 }
 
 
-model User {
-  id          String        @id @default(uuid())
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
+model Profile {
+  id           String        @id @db.Uuid
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
 
-  username    String        @unique
-  email       String        @unique
-  password    String
+  username     String        @unique
 
-
-  posts       Post[]
-  comments    Comment[]
-  postVotes   PostVote[]
+  posts        Post[]
+  comments     Comment[]
+  postVotes    PostVote[]
   commentVotes CommentVote[]
 }
 
 
 model Post {
-  id          String        @id @default(uuid())
+  id          String        @id @default(uuid()) @db.Uuid
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
 
@@ -41,10 +35,10 @@ model Post {
   content     String
   timestamp   BigInt
 
-  authorId    String  // *** FOREIGN KEY ***
-  subredditId String
+  authorId    String        @db.Uuid
+  subredditId String        @db.Uuid
 
-  author      User          @relation(fields: [authorId], references: [id], onDelete: Restrict)
+  author      Profile       @relation(fields: [authorId], references: [id], onDelete: Restrict)
   subreddit   Subreddit     @relation(fields: [subredditId], references: [id], onDelete: Cascade)
 
   comments    Comment[]
@@ -57,18 +51,18 @@ model Post {
 
 
 model Comment {
-  id          String        @id @default(uuid())
+  id          String        @id @default(uuid()) @db.Uuid
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
 
   content     String
   timestamp   BigInt
 
-  postId      String
-  authorId    String
+  postId      String        @db.Uuid
+  authorId    String        @db.Uuid
 
-  post        Post          @relation(fields: [postId], references: [id])
-  author      User          @relation(fields: [authorId], references: [id])
+  post        Post          @relation(fields: [postId], references: [id], onDelete: Cascade)
+  author      Profile       @relation(fields: [authorId], references: [id], onDelete: Restrict)
 
   votes       CommentVote[]
 
@@ -79,7 +73,7 @@ model Comment {
 
 
 model Subreddit {
-  id          String        @id @default(uuid())
+  id          String        @id @default(uuid()) @db.Uuid
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
 
@@ -89,17 +83,17 @@ model Subreddit {
 }
 
 
-model CommentVote { // **** not using one table for comment and post votes because polimorphism in prisma is weird.
-  id          String        @id @default(uuid())
+model CommentVote {
+  id          String        @id @default(uuid()) @db.Uuid
   createdAt   DateTime      @default(now())
 
   value       Int
 
-  commentId   String
-  userId      String
+  commentId   String       @db.Uuid
+  userId      String       @db.Uuid
 
-  comment     Comment       @relation(fields: [commentId], references: [id], onDelete: Cascade)
-  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  comment     Comment      @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  user        Profile      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([commentId, userId])
   @@index([commentId])
@@ -108,16 +102,16 @@ model CommentVote { // **** not using one table for comment and post votes becau
 
 
 model PostVote {
-  id          String        @id @default(uuid())
+  id          String        @id @default(uuid()) @db.Uuid
   createdAt   DateTime      @default(now())
 
   value       Int
 
-  postId      String
-  userId      String
+  postId      String       @db.Uuid
+  userId      String       @db.Uuid
 
-  post        Post          @relation(fields: [postId], references: [id])
-  user        User          @relation(fields: [userId], references: [id])
+  post        Post         @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user        Profile      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([postId, userId])
   @@index([postId])

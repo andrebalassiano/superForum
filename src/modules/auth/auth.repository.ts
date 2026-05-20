@@ -2,49 +2,27 @@ import prisma from '../../core/prismaSingleton';
 import { Prisma } from '../../generated/prisma/client';
 
 const authRepository = {
-    async findByEmail(email: string) {
-        return prisma.user.findUnique({
+    async findProfileById(profileId: string) {
+        return prisma.profile.findUnique({
             where: {
-                email,
+                id: profileId,
             },
         });
     },
 
-    async findById(userId: string) {
-        return prisma.user.findUnique({
+    async findProfileByUsername(username: string) {
+        return prisma.profile.findUnique({
             where: {
-                id: userId,
+                username,
             },
         });
     },
 
-    async findByUsername(username: string) {
-    return prisma.user.findUnique({
-        where: {
-            username,
-        },
-    });
-},
-
-    async createUser(data: Prisma.UserCreateInput) {
-        return prisma.user.create({
+    async createProfile(data: Prisma.ProfileCreateInput) {
+        return prisma.profile.create({
             data,
         });
     },
-}
-
-// methods to add/consider later:
-// findByUsername
-//
-// updatePasswordById
-//
-// storeRefreshToken
-// findByRefreshToken
-// deleteRefreshToken
-// revokeRefreshToken
-//
-// updateUserById
-// deleteUserById
-
+};
 
 export default authRepository;
