@@ -9,7 +9,11 @@ const authController = {
         try {
             const dto = req.body;
 
-            const profile = await authService.createProfile(dto.id, dto.username);
+            if (!req.user) {
+                return res.status(401).json({ message: 'Unauthorized' });
+            }
+
+            const profile = await authService.createProfile(req.user.id, dto.username);
 
             if (!profile) {
                 return res.status(409).json({ message: 'Username already in use' });
@@ -41,6 +45,28 @@ const authController = {
             console.error(error);
 
             return res.status(500).json({ message: 'Failed to fetch profile' });
+        }
+    },
+
+    async getCurrentProfile(req: Request, res: Response) {
+
+        if (!req.user) {
+            return res.status(401).json({ message: 'Unauthorized' });
+        }
+
+        try {
+            const profile = await authService.getProfileById(req.user.id);
+
+            if (!profile) {
+                return res.status(404).json({ message: 'Profile not found' });
+            }
+
+            return res.status(200).json(profile);
+
+        } catch (error) {
+            console.error(error);
+
+            return res.status(500).json({ message: 'Failed to fetch current profile' });
         }
     },
 };

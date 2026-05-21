@@ -1,17 +1,24 @@
 import express from 'express';
 import authController from './auth.controller';
+import requireAuth from '../../middleware/requireAuth';
+import validateBody from '../../middleware/validateBody';
+import validateParams from '../../middleware/validateParams';
+import { createProfileSchema, idParamsSchema } from './auth.schemas';
+
 
 const authRouter = express.Router();
 
 authRouter
     .route('/profile')
-    .post(authController.createProfile);
+    .post(requireAuth, validateBody(createProfileSchema), authController.createProfile);
 
 authRouter
     .route('/profiles/:id')
-    .get(authController.getProfileById);
+    .get(validateParams(idParamsSchema), authController.getProfileById);
 
-// later:
-// authRouter.route('/me').get(requireAuth, authController.getCurrentProfile);
+authRouter
+    .route('/me')
+    .get(requireAuth, authController.getCurrentProfile);
+
 
 export default authRouter;
