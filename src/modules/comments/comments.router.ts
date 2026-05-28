@@ -1,0 +1,47 @@
+import express from 'express';
+import commentsController from './comments.controller';
+import requireAuth from '../../middleware/requireAuth';
+import validateBody from '../../middleware/validateBody';
+import validateParams from '../../middleware/validateParams';
+import {
+    createCommentSchema,
+    updateCommentSchema,
+    idParamsSchema,
+    postIdParamsSchema,
+} from './comments.schemas';
+
+
+// CRUD on a single comment, mounted at /comments in the main router
+const commentsRouter = express.Router();
+
+// Create a comment — auth required so authorId can be pulled from req.user.id, body validated
+commentsRouter
+    .route('/')
+    .post(requireAuth, validateBody(createCommentSchema), commentsController.createComment);
+
+// Read / update / delete a single comment by id; :id is validated as a UUID for every verb on this route
+commentsRouter
+    .route('/:id')
+    .get(validateParams(idParamsSchema), commentsController.getCommentById)
+    .patch(
+        requireAuth,
+        validateParams(idParamsSchema),
+        validateBody(updateCommentSchema),
+        commentsController.updateComment,
+    )
+    .delete(requireAuth, validateParams(idParamsSchema), commentsController.deleteComment);
+
+
+// Nested list route, mounted at /posts/:postId/comments in the main router.
+// mergeParams: true lets this inner router see :postId from the outer mount path
+// (otherwise req.params.postId would be undefined here).
+const postCommentsRouter = express.Router({ mergeParams: true });
+
+// List all comments on a given post — public read, but the :postId in the URL is validated as a UUID
+postCommentsRouter
+    .route('/')
+    .get(validateParams(postIdParamsSchema), commentsController.getCommentsByPostId);
+
+
+export default commentsRouter;
+export { postCommentsRouter };

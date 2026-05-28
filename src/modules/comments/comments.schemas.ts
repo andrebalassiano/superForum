@@ -21,7 +21,14 @@ export const idParamsSchema = z.object({
     id: z.uuid(),
 });
 
+// for the nested list route GET /posts/:postId/comments — :postId comes in as a string param
+// and we validate it the same way we validate :id, just under a different name
+export const postIdParamsSchema = z.object({
+    postId: z.uuid(),
+});
+
 // DTOs inferred from the schemas — one source of truth for runtime validation and TS types
 export type CreateCommentDTO = z.infer<typeof createCommentSchema>;
 export type UpdateCommentDTO = z.infer<typeof updateCommentSchema>;
 export type IdParamsDTO = z.infer<typeof idParamsSchema>;
+export type PostIdParamsDTO = z.infer<typeof postIdParamsSchema>;
