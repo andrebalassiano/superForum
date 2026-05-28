@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import postsService from './posts.service';
-import { IdParamsDTO } from './posts.schemas';
+import { CreatePostDTO, IdParamsDTO } from './posts.schemas';
 
 
 const postsController = {
@@ -39,12 +39,18 @@ const postsController = {
         }
     },
 
-    async createPost(req: Request, res: Response) {
+    async createPost(req: Request<object, object, CreatePostDTO>, res: Response) {
+
+        // defensive check — requireAuth should guarantee req.user, but TS doesn't know that
+        if (!req.user) {
+            return res.status(401).json({ message: 'Unauthorized' });
+        }
 
         try {
             const dto = req.body;
 
-            const post = await postsService.createPost(dto);
+            // authorId comes from the verified token, not the client — prevents impersonation
+            const post = await postsService.createPost(req.user.id, dto);
 
             return res.status(201).json(post);
 

@@ -31,9 +31,8 @@ model Post {
   updatedAt   DateTime      @updatedAt
 
   title       String
-  link        String
   content     String
-  timestamp   BigInt
+  timestamp   DateTime
 
   authorId    String        @db.Uuid
   subredditId String        @db.Uuid
@@ -56,7 +55,7 @@ model Comment {
   updatedAt   DateTime      @updatedAt
 
   content     String
-  timestamp   BigInt
+  timestamp   DateTime
 
   postId      String        @db.Uuid
   authorId    String        @db.Uuid

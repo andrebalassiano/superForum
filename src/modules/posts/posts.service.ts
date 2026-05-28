@@ -1,7 +1,6 @@
 import postsRepository from './posts.repository';
 import { CreatePostDTO, UpdatePostDTO } from './posts.schemas';
 import { Prisma } from '../../generated/prisma/client';
-import { randomUUID } from 'crypto';
 import z from 'zod';
 
 const postsService = {
@@ -16,22 +15,22 @@ const postsService = {
     },
 
 
-    async createPost(dto: CreatePostDTO) {
+    // authorId now comes from the authenticated caller (req.user.id), not the request body
+    async createPost(authorId: string, dto: CreatePostDTO) {
         const data: Prisma.PostCreateInput = {
             title: dto.title,
-            link: `post/${randomUUID()}`,
             content: dto.content,
             timestamp: dto.timestamp,
             author: {
                 connect: {
-                    id: dto.authorId,
+                    id: authorId,
                 }
             },
             subreddit: {
                 connect: {
                     id: dto.subredditId,
                 }
-            },            
+            },
         }
 
         return await postsRepository.create(data);

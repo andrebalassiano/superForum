@@ -1,11 +1,12 @@
 import z from 'zod';
 
 
+// authorId is intentionally NOT in the body — it's pulled from req.user.id (set by requireAuth)
+// so a client can't impersonate another user by sending someone else's id.
 export const createPostSchema = z.object({
     title: z.string().trim(),
     content: z.string().min(1),
-    timestamp: z.number().int(), // changed from bigint for cleaner JSON/API handling
-    authorId: z.uuid(),
+    timestamp: z.iso.datetime(),
     subredditId: z.uuid(),
 });
 
