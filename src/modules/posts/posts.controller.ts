@@ -5,11 +5,13 @@ import { CreatePostDTO, IdParamsDTO } from './posts.schemas';
 
 const postsController = {
 
-    async getPosts(_req: Request, res: Response) {
+    async getPosts(req: Request, res: Response) {
 
         try {
-            const posts = await postsService.getAllPosts();  // 
-            
+            // req.user is undefined for anonymous callers (optionalAuth didn't reject) and populated
+            // when a valid token was present — pass through with optional chaining
+            const posts = await postsService.getAllPosts(req.user?.id);
+
             return res.status(200).json(posts);
 
         } catch (error) {
@@ -20,11 +22,11 @@ const postsController = {
     },
 
     async getPostById(req: Request<IdParamsDTO>, res: Response) {
-        
+
         const { id } = req.params;
 
         try {
-            const post = await postsService.getPostById(id);
+            const post = await postsService.getPostById(id, req.user?.id);
 
             if (!post) {
                 return res.status(404).json({ message: 'Post not found'});

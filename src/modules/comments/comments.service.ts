@@ -1,4 +1,4 @@
-import CommentsRepository from './comments.repository';
+import commentsRepository from './comments.repository';
 import { Prisma } from '../../generated/prisma/client';
 import { CreateCommentDTO, UpdateCommentDTO } from './comments.schemas';
 
@@ -23,17 +23,29 @@ const commentsService = {
             },
         };
 
-        return await CommentsRepository.create(data);
+        return await commentsRepository.create(data);
     },
 
-    // simple read passthrough — kept here so the controller never talks to the repository directly
-    async getCommentById(id: string) {
-        return await CommentsRepository.findById({ id });
+    // userId is optional (req.user?.id from optionalAuth). When provided, the repo includes the
+    // caller's vote on this comment; we strip the raw `votes` array and surface it as
+    // `currentUserVote: 1 | -1 | null` so the client doesn't see the include shape.
+    async getCommentById(id: string, userId?: string) {
+        const comment = await commentsRepository.findById({ id }, userId);
+        if (!comment) return null;
+
+        const { votes, ...rest } = comment as typeof comment & { votes?: { value: number }[] };
+        return { ...rest, currentUserVote: votes?.[0]?.value ?? null };
     },
 
-    // list every comment on a given post; pagination/sorting can layer in later
-    async getCommentsByPostId(postId: string) {
-        return await CommentsRepository.findByPostId(postId);
+    // Same reshape, applied to every comment in the thread — single round-trip, all arrow states
+    // ready for the client to render on first paint.
+    async getCommentsByPostId(postId: string, userId?: string) {
+        const comments = await commentsRepository.findByPostId(postId, userId);
+
+        return comments.map((comment) => {
+            const { votes, ...rest } = comment as typeof comment & { votes?: { value: number }[] };
+            return { ...rest, currentUserVote: votes?.[0]?.value ?? null };
+        });
     },
 
     // build the update payload from only the fields that were sent (PATCH semantics)
@@ -46,7 +58,7 @@ const commentsService = {
 
         // P2025 = "record not found" — catch it and return null so the controller can map to a 404
         try {
-            return await CommentsRepository.updateById({ id }, data);
+            return await commentsRepository.updateById({ id }, data);
         } catch (error) {
             if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
                 return null;
@@ -58,7 +70,7 @@ const commentsService = {
     // same P2025 trick — delete throws if the row doesn't exist
     async deleteComment(id: string) {
         try {
-            return await CommentsRepository.deleteById({ id });
+            return await commentsRepository.deleteById({ id });
         } catch (error) {
             if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
                 return null;

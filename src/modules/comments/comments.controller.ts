@@ -30,7 +30,8 @@ const commentsController = {
         const { id } = req.params;
 
         try {
-            const comment = await commentsService.getCommentById(id);
+            // req.user is undefined for anonymous callers (optionalAuth didn't reject) — pass through
+            const comment = await commentsService.getCommentById(id, req.user?.id);
 
             if (!comment) {
                 return res.status(404).json({ message: 'Comment not found' });
@@ -50,7 +51,7 @@ const commentsController = {
         const { postId } = req.params;
 
         try {
-            const comments = await commentsService.getCommentsByPostId(postId);
+            const comments = await commentsService.getCommentsByPostId(postId, req.user?.id);
 
             // empty list is a valid result (post simply has no comments yet) — don't 404
             return res.status(200).json(comments);

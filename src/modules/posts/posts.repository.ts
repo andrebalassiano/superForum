@@ -2,7 +2,9 @@ import prisma from '../../core/prismaSingleton';
 import { Prisma } from '../../generated/prisma/client';
 
 const postsRepository = {
-    async findAll() {
+    // When userId is supplied, attach that user's vote on each post via a filtered include — one
+    // query, no N+1. The compound unique (postId, userId) guarantees 0 or 1 votes per post per user.
+    async findAll(userId?: string) {
         return prisma.post.findMany({
             include: {
                 author: true,
@@ -12,6 +14,9 @@ const postsRepository = {
                         comments: true,
                     },
                 },
+                ...(userId
+                    ? { votes: { where: { userId }, select: { value: true } } }
+                    : {}),
             },
             orderBy: {
                 createdAt: 'desc',
@@ -29,7 +34,8 @@ const postsRepository = {
         });
     },
 
-    async findById(where: Prisma.PostWhereUniqueInput) {
+    // Same userId-as-filtered-include pattern as findAll — single query carries the caller's vote.
+    async findById(where: Prisma.PostWhereUniqueInput, userId?: string) {
         return prisma.post.findUnique({
             where,
             include: {
@@ -41,6 +47,9 @@ const postsRepository = {
                         comments: true,
                     },
                 },
+                ...(userId
+                    ? { votes: { where: { userId }, select: { value: true } } }
+                    : {}),
             },
         });
     },

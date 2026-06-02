@@ -1,19 +1,23 @@
 import express from 'express';
 import postsController from './posts.controller';
 import requireAuth from '../../middleware/requireAuth';
+import optionalAuth from '../../middleware/optionalAuth';
 
 const postsRouter = express.Router();
 
-// GET is public; POST requires auth so the server can attribute the post to req.user.id
+// GETs use optionalAuth: anonymous browsing still works (req.user undefined), and when a valid
+// token IS present the controller can personalize the response (e.g. currentUserVote on each post).
+// POST requires hard auth so the server can attribute the new post to req.user.id.
 postsRouter
     .route('/')
-    .get(postsController.getPosts)
+    .get(optionalAuth, postsController.getPosts)
     .post(requireAuth, postsController.createPost);
 
-// reads are public; mutations require auth (later: also check ownership in the service)
+// reads use optionalAuth for the same personalization reason; mutations require hard auth
+// (later: also check ownership in the service)
 postsRouter
     .route('/:id')
-    .get(postsController.getPostById)
+    .get(optionalAuth, postsController.getPostById)
     .patch(requireAuth, postsController.updatePost)
     .delete(requireAuth, postsController.deletePost);
 

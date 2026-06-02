@@ -5,13 +5,17 @@ import z from 'zod';
 
 const postsService = {
 
-    async getAllPosts() {
-        const posts = await postsRepository.findAll();
-        // this case is just a pipe, but other functions will have more logic.
+    // userId is optional — passed in by the controller as req.user?.id (undefined for anonymous).
+    // When provided, the repo includes the caller's vote on each post; we strip the raw `votes`
+    // array and surface it as `currentUserVote: 1 | -1 | null` so the client never sees the
+    // include shape and can render arrow state on first paint.
+    async getAllPosts(userId?: string) {
+        const posts = await postsRepository.findAll(userId);
 
-        return posts;
-        // fine for now, may feature .map functionality later, such as pagination,
-        // sorting, filtering, caching.
+        return posts.map((post) => {
+            const { votes, ...rest } = post as typeof post & { votes?: { value: number }[] };
+            return { ...rest, currentUserVote: votes?.[0]?.value ?? null };
+        });
     },
 
 
@@ -42,9 +46,13 @@ const postsService = {
     },
 
 
-    async getPostById(postId: string) {
+    // Mirror of getAllPosts for a single post — same userId-through pattern, same reshape.
+    async getPostById(postId: string, userId?: string) {
+        const post = await postsRepository.findById({ id: postId }, userId);
+        if (!post) return null;
 
-        return await postsRepository.findById({ id: postId });
+        const { votes, ...rest } = post as typeof post & { votes?: { value: number }[] };
+        return { ...rest, currentUserVote: votes?.[0]?.value ?? null };
     },
 
 

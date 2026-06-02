@@ -1,6 +1,7 @@
 import express from 'express';
 import commentsController from './comments.controller';
 import requireAuth from '../../middleware/requireAuth';
+import optionalAuth from '../../middleware/optionalAuth';
 import validateBody from '../../middleware/validateBody';
 import validateParams from '../../middleware/validateParams';
 import {
@@ -19,10 +20,11 @@ commentsRouter
     .route('/')
     .post(requireAuth, validateBody(createCommentSchema), commentsController.createComment);
 
-// Read / update / delete a single comment by id; :id is validated as a UUID for every verb on this route
+// Read uses optionalAuth so the controller can fold in currentUserVote when the caller is known;
+// update/delete still require hard auth. :id is validated as a UUID for every verb on this route.
 commentsRouter
     .route('/:id')
-    .get(validateParams(idParamsSchema), commentsController.getCommentById)
+    .get(optionalAuth, validateParams(idParamsSchema), commentsController.getCommentById)
     .patch(
         requireAuth,
         validateParams(idParamsSchema),
@@ -37,10 +39,11 @@ commentsRouter
 // (otherwise req.params.postId would be undefined here).
 const postCommentsRouter = express.Router({ mergeParams: true });
 
-// List all comments on a given post — public read, but the :postId in the URL is validated as a UUID
+// List all comments on a given post — public read with optionalAuth for currentUserVote enrichment.
+// :postId in the URL is validated as a UUID.
 postCommentsRouter
     .route('/')
-    .get(validateParams(postIdParamsSchema), commentsController.getCommentsByPostId);
+    .get(optionalAuth, validateParams(postIdParamsSchema), commentsController.getCommentsByPostId);
 
 
 export default commentsRouter;

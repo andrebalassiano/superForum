@@ -2,7 +2,7 @@ import prisma from '../../core/prismaSingleton';
 import { Prisma } from '../../generated/prisma/client';
 
 
-const SubredditsRepository = {
+const subredditsRepository = {
     async create(data:Prisma.SubredditCreateInput) {
         return prisma.subreddit.create({
             data,
@@ -15,7 +15,7 @@ const SubredditsRepository = {
         })
     },
 
-    async updateById(where:Prisma.SubredditWhereUniqueInput, 
+    async updateById(where:Prisma.SubredditWhereUniqueInput,
                data:Prisma.SubredditUpdateInput) {
         return prisma.subreddit.update({
             where,
@@ -31,4 +31,4 @@ const SubredditsRepository = {
 };
 
 
-export default SubredditsRepository;
+export default subredditsRepository;
