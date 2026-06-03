@@ -71,11 +71,11 @@ const postsController = {
             const dto = req.body;
 
             const post = await postsService.updatePost(id, dto);
-            
-            // if (!post) {
-            //     return res.status(404).json({ message: 'Post not found'});
-            // }
-            
+
+            if (!post) {
+                return res.status(404).json({ message: 'Post not found'});
+            }
+
             return res.status(200).json(post);
 
         } catch (error) {
