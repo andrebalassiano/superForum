@@ -15,10 +15,11 @@ Reddit-like REST API backend. Built by Andre and Luiz.
 
 Andre runs all shell commands in **PowerShell** on Windows — use PowerShell syntax (`$env:VAR`, `;` for sequencing, no `&&` chaining) when suggesting commands.
 
-No `npm run dev` script is defined. Use `tsx` directly:
+Run the server:
 
 ```powershell
-npx tsx src/server.ts
+npm run dev          # one-shot (Ctrl+C to stop)
+npm run dev:watch    # auto-restart on file changes
 ```
 
 Type-check without emitting:
