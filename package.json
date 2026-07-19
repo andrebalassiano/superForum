@@ -1,8 +1,9 @@
 {
   "name": "superforum",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "A Reddit-style forum REST API built with TypeScript, Express 5, Prisma 7, and Supabase auth.",
+  "private": true,
+  "main": "dist/server.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "tsc",
@@ -12,15 +13,26 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/luiz-dod-software-solutions/superForum.git"
+    "url": "git+https://github.com/andrebalassiano/superForum.git"
   },
-  "keywords": [],
-  "author": "",
+  "keywords": [
+    "rest-api",
+    "express",
+    "typescript",
+    "prisma",
+    "postgresql",
+    "supabase",
+    "forum"
+  ],
+  "author": "Andre Balassiano",
+  "contributors": [
+    "Luiz Tatemoto"
+  ],
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/luiz-dod-software-solutions/superForum/issues"
+    "url": "https://github.com/andrebalassiano/superForum/issues"
   },
-  "homepage": "https://github.com/luiz-dod-software-solutions/superForum#readme",
+  "homepage": "https://github.com/andrebalassiano/superForum#readme",
   "devDependencies": {
     "@types/express": "^5.0.6",
     "@types/node": "^25.4.0",
