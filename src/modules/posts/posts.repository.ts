@@ -8,7 +8,7 @@ const postsRepository = {
         return prisma.post.findMany({
             include: {
                 author: true,
-                subreddit: true,
+                community: true,
                 _count: {
                     select: {
                         comments: true,
@@ -29,7 +29,7 @@ const postsRepository = {
             data,
             include: {
                 author: true,
-                subreddit: true,
+                community: true,
             },
         });
     },
@@ -40,7 +40,7 @@ const postsRepository = {
             where,
             include: {
                 author: true,
-                subreddit: true,
+                community: true,
                 comments: true,
                 _count: {
                     select: {
@@ -54,14 +54,14 @@ const postsRepository = {
         });
     },
 
-    async findBySubredditId(subredditId: string) {
+    async findByCommunityId(communityId: string) {
         return prisma.post.findMany({
             where: {
-                subredditId,
+                communityId,
             },
             include: {
                 author: true,
-                subreddit: true,
+                community: true,
                 _count: {
                     select: {
                         comments: true,
@@ -81,7 +81,7 @@ const postsRepository = {
             data,
             include: {
                 author: true,
-                subreddit: true,
+                community: true,
                 comments: true,
                 _count: {
                     select: {

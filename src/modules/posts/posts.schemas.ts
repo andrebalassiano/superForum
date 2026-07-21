@@ -7,7 +7,7 @@ export const createPostSchema = z.object({
     title: z.string().trim(),
     content: z.string().min(1),
     timestamp: z.iso.datetime(),
-    subredditId: z.uuid(),
+    communityId: z.uuid(),
 });
 
 export const idParamsSchema = z.object({

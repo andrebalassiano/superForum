@@ -1,12 +1,12 @@
 # superForum
 
-superForum is a Reddit-style forum API. It lets people register, spin up subreddits, write posts and comments, and vote on them. It's a REST backend written in TypeScript on Express 5, with Prisma 7 talking to a Postgres database and Supabase handling authentication. Every write is authenticated with a server-verified JWT and validated with Zod before it reaches the database.
+superForum is a Reddit-style forum API. It lets people register, spin up communities, write posts and comments, and vote on them. It's a REST backend written in TypeScript on Express 5, with Prisma 7 talking to a Postgres database and Supabase handling authentication. Every write is authenticated with a server-verified JWT and validated with Zod before it reaches the database.
 
 I built it partly as a learning project and partly as a reference for how I like to structure a Node backend, so the emphasis throughout is on a clean, predictable layout rather than clever shortcuts.
 
 ## How it's organized
 
-Each feature lives in its own module under `src/modules` — `auth`, `subreddits`, `posts`, `comments`, and `votes` — and every module is split into the same four layers. A router declares the routes and hangs the middleware off them. A controller deals with the request and response and nothing else. A service holds the actual business logic. A repository is the only place that talks to Prisma. So a request flows router → controller → service → repository on the way in, and back out the same way.
+Each feature lives in its own module under `src/modules` — `auth`, `communities`, `posts`, `comments`, and `votes` — and every module is split into the same four layers. A router declares the routes and hangs the middleware off them. A controller deals with the request and response and nothing else. A service holds the actual business logic. A repository is the only place that talks to Prisma. So a request flows router → controller → service → repository on the way in, and back out the same way.
 
 The point of that separation is that each layer only knows about the one beneath it. The controller doesn't know Prisma exists; the repository doesn't know what an HTTP status code is. It makes the code easy to follow and easy to test a layer at a time. The shared middleware — the two auth guards and the Zod validators — lives in `src/middleware` and gets composed onto routes as needed. The app itself is small: `src/app.ts` builds the Express app and mounts everything under `/api`, and `src/server.ts` starts it on port 3000.
 
@@ -16,7 +16,7 @@ Routes are grouped by resource. Reads are generally public; writes require a bea
 
 **Auth and profiles.** `POST /auth/profile` creates the signed-in user's profile row, `GET /auth/me` returns it, and `GET /auth/profiles/:id` looks up any profile by id (public).
 
-**Subreddits.** `POST /subreddits` creates one; `GET /subreddits/:id` reads it (public); `PATCH` and `DELETE` on the same path update and remove it.
+**Communities.** `POST /communities` creates one; `GET /communities/:id` reads it (public); `PATCH` and `DELETE` on the same path update and remove it.
 
 **Posts.** `GET /posts` lists them and `GET /posts/:id` reads one — both public, both enriched with your current vote if you're authenticated. `POST /posts` creates a post, and `PATCH`/`DELETE /posts/:id` edit and remove it.
 
@@ -38,7 +38,7 @@ A couple of smaller things: there's **one shared Prisma client** (in `src/core/p
 
 ## The data model
 
-A **Profile** is keyed by the user's Supabase auth UUID rather than a generated id, and has a unique username. A **Post** belongs to a profile (its author) and a subreddit, and owns its comments and votes. A **Comment** belongs to a post and a profile. A **Subreddit** has a unique name and owns its posts, which cascade-delete with it. **PostVote** and **CommentVote** are each unique per user-and-target pair, with a `value` of `1` or `-1`. The full schema, with its indexes and cascade rules, is in `prisma/schema.prisma`.
+A **Profile** is keyed by the user's Supabase auth UUID rather than a generated id, and has a unique username. A **Post** belongs to a profile (its author) and a community, and owns its comments and votes. A **Comment** belongs to a post and a profile. A **Community** has a unique name and owns its posts, which cascade-delete with it. **PostVote** and **CommentVote** are each unique per user-and-target pair, with a `value` of `1` or `-1`. The full schema, with its indexes and cascade rules, is in `prisma/schema.prisma`.
 
 ## Running it locally
 
@@ -62,7 +62,7 @@ A few things are on the list: enforcing ownership on edits and deletes so people
 
 ## Credits
 
-Built by Andre Balassiano and Luiz Tatemoto. I wrote the auth, subreddits, comments, and votes modules along with the shared middleware layer.
+Built by Andre Balassiano and Luiz Tatemoto. I wrote the auth, communities, comments, and votes modules along with the shared middleware layer.
 
 ## License
 

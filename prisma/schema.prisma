@@ -35,16 +35,16 @@ model Post {
   timestamp   DateTime
 
   authorId    String        @db.Uuid
-  subredditId String        @db.Uuid
+  communityId String        @db.Uuid
 
   author      Profile       @relation(fields: [authorId], references: [id], onDelete: Restrict)
-  subreddit   Subreddit     @relation(fields: [subredditId], references: [id], onDelete: Cascade)
+  community   Community     @relation(fields: [communityId], references: [id], onDelete: Cascade)
 
   comments    Comment[]
   votes       PostVote[]
 
   @@index([authorId])
-  @@index([subredditId])
+  @@index([communityId])
   @@index([createdAt])
 }
 
@@ -71,7 +71,7 @@ model Comment {
 }
 
 
-model Subreddit {
+model Community {
   id          String        @id @default(uuid()) @db.Uuid
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt

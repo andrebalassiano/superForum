@@ -67,9 +67,9 @@ Not yet wired (see Checkpoint at bottom):
 ## Data models (summary)
 
 - `Profile` — id is the Supabase auth UUID (not auto-generated), has unique `username`
-- `Post` — belongs to `Profile` (author) and `Subreddit`; has `comments` and `votes`
+- `Post` — belongs to `Profile` (author) and `Community`; has `comments` and `votes`
 - `Comment` — belongs to `Post` and `Profile`; has `votes`
-- `Subreddit` — has unique `name`, owns posts (cascade delete)
+- `Community` — has unique `name`, owns posts (cascade delete)
 - `PostVote` / `CommentVote` — unique per (entity, user) pair; `value` is an Int (upvote/downvote)
 
 ## Environment variables

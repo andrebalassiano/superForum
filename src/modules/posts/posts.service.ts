@@ -30,9 +30,9 @@ const postsService = {
                     id: authorId,
                 }
             },
-            subreddit: {
+            community: {
                 connect: {
-                    id: dto.subredditId,
+                    id: dto.communityId,
                 }
             },
         }
@@ -40,9 +40,9 @@ const postsService = {
         return await postsRepository.create(data);
     },
 
-    async getPostsBySubreddit(subredditId: string) {
-        
-        return await postsRepository.findBySubredditId(subredditId);
+    async getPostsByCommunity(communityId: string) {
+
+        return await postsRepository.findByCommunityId(communityId);
     },
 
 
