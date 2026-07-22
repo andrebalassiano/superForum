@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import commentsService from './comments.service';
+import commentsService, { FORBIDDEN } from './comments.service';
 import { CreateCommentDTO, IdParamsDTO, UpdateCommentDTO } from './comments.schemas';
 
 
@@ -68,12 +68,22 @@ const commentsController = {
     },
 
     async updateComment(req: Request<IdParamsDTO, object, UpdateCommentDTO>, res: Response) {
+
+        // defensive check — requireAuth should guarantee req.user, but TS doesn't know that
+        if (!req.user) {
+            return res.status(401).json({ message: 'Unauthorized' });
+        }
+
         const { id } = req.params;
 
         try {
-            const comment = await commentsService.updateComment(id, req.body);
+            const comment = await commentsService.updateComment(id, req.user.id, req.body);
 
-            // service returns null on the P2025 path (no row with that id) — map to 404
+            // caller isn't the author — 403 (distinct from 404 for a genuinely missing comment)
+            if (comment === FORBIDDEN) {
+                return res.status(403).json({ message: 'You can only modify your own comments' });
+            }
+
             if (!comment) {
                 return res.status(404).json({ message: 'Comment not found' });
             }
@@ -87,10 +97,20 @@ const commentsController = {
     },
 
     async deleteComment(req: Request<IdParamsDTO>, res: Response) {
+
+        // defensive check — requireAuth should guarantee req.user, but TS doesn't know that
+        if (!req.user) {
+            return res.status(401).json({ message: 'Unauthorized' });
+        }
+
         const { id } = req.params;
 
         try {
-            const comment = await commentsService.deleteComment(id);
+            const comment = await commentsService.deleteComment(id, req.user.id);
+
+            if (comment === FORBIDDEN) {
+                return res.status(403).json({ message: 'You can only modify your own comments' });
+            }
 
             if (!comment) {
                 return res.status(404).json({ message: 'Comment not found' });

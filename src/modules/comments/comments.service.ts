@@ -3,6 +3,10 @@ import { Prisma } from '../../generated/prisma/client';
 import { CreateCommentDTO, UpdateCommentDTO } from './comments.schemas';
 
 
+// Returned by update/delete when the caller isn't the comment's author — controller maps it to 403.
+// Distinct from null, which means "no such comment" → 404.
+export const FORBIDDEN = 'FORBIDDEN' as const;
+
 const commentsService = {
 
     // authorId comes from the authenticated caller (req.user.id), not the request body —
@@ -58,7 +62,17 @@ const commentsService = {
     },
 
     // build the update payload from only the fields that were sent (PATCH semantics)
-    async updateComment(id: string, dto: UpdateCommentDTO) {
+    async updateComment(id: string, userId: string, dto: UpdateCommentDTO) {
+        // Ownership gate: only the author may edit. Fetch first so we can distinguish
+        // "no such comment" (null → 404) from "not yours" (FORBIDDEN → 403).
+        const existing = await commentsRepository.findById({ id });
+        if (!existing) {
+            return null;
+        }
+        if (existing.authorId !== userId) {
+            return FORBIDDEN;
+        }
+
         const data: Prisma.CommentUpdateInput = {};
 
         if (dto.content !== undefined) {
@@ -76,8 +90,16 @@ const commentsService = {
         }
     },
 
-    // same P2025 trick — delete throws if the row doesn't exist
-    async deleteComment(id: string) {
+    async deleteComment(id: string, userId: string) {
+        // Same ownership gate as updateComment.
+        const existing = await commentsRepository.findById({ id });
+        if (!existing) {
+            return null;
+        }
+        if (existing.authorId !== userId) {
+            return FORBIDDEN;
+        }
+
         try {
             return await commentsRepository.deleteById({ id });
         } catch (error) {

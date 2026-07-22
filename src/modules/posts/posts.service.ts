@@ -1,7 +1,11 @@
 import postsRepository from './posts.repository';
 import { CreatePostDTO, UpdatePostDTO } from './posts.schemas';
 import { Prisma } from '../../generated/prisma/client';
-import z from 'zod';
+
+
+// Returned by update/delete when the caller isn't the post's author — the controller maps it to 403.
+// Distinct from null, which means "no such post" → 404.
+export const FORBIDDEN = 'FORBIDDEN' as const;
 
 const postsService = {
 
@@ -66,7 +70,17 @@ const postsService = {
 
 
 
-    async updatePost(postId: string, dto: UpdatePostDTO) {
+    async updatePost(postId: string, userId: string, dto: UpdatePostDTO) {
+        // Ownership gate: only the author may edit. Fetch first so we can distinguish
+        // "no such post" (null → 404) from "not yours" (FORBIDDEN → 403).
+        const existing = await postsRepository.findById({ id: postId });
+        if (!existing) {
+            return null;
+        }
+        if (existing.authorId !== userId) {
+            return FORBIDDEN;
+        }
+
         const data: Prisma.PostUpdateInput = {};
 
         if (dto.title !== undefined) {
@@ -87,23 +101,31 @@ const postsService = {
 
                 return null;
             }
-            
+
             throw error;
         }
     },
 
 
 
-    async deletePost(postId: string) {
+    async deletePost(postId: string, userId: string) {
+        // Same ownership gate as updatePost.
+        const existing = await postsRepository.findById({ id: postId });
+        if (!existing) {
+            return null;
+        }
+        if (existing.authorId !== userId) {
+            return FORBIDDEN;
+        }
 
         try {
             return await postsRepository.deleteById({ id: postId});
-        
+
         } catch (error) {
 
             if(error instanceof Prisma.PrismaClientKnownRequestError &&
                 error.code === 'P2025') {
-                    
+
                 return null;
             }
 

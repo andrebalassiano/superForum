@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import postsService from './posts.service';
+import postsService, { FORBIDDEN } from './posts.service';
 import { CreatePostDTO, IdParamsDTO } from './posts.schemas';
 
 
@@ -70,12 +70,22 @@ const postsController = {
 
     async updatePost(req: Request<IdParamsDTO>, res: Response) {
 
+        // defensive check — requireAuth should guarantee req.user, but TS doesn't know that
+        if (!req.user) {
+            return res.status(401).json({ message: 'Unauthorized' });
+        }
+
         const { id } = req.params;
 
         try {
             const dto = req.body;
 
-            const post = await postsService.updatePost(id, dto);
+            const post = await postsService.updatePost(id, req.user.id, dto);
+
+            // caller isn't the author — 403 (distinct from 404 for a genuinely missing post)
+            if (post === FORBIDDEN) {
+                return res.status(403).json({ message: 'You can only modify your own posts' });
+            }
 
             if (!post) {
                 return res.status(404).json({ message: 'Post not found'});
@@ -91,11 +101,20 @@ const postsController = {
     },
 
     async deletePost(req: Request<IdParamsDTO>, res: Response) {
-        
+
+        // defensive check — requireAuth should guarantee req.user, but TS doesn't know that
+        if (!req.user) {
+            return res.status(401).json({ message: 'Unauthorized' });
+        }
+
         const { id } = req.params;
 
         try {
-            const post = await postsService.deletePost(id);
+            const post = await postsService.deletePost(id, req.user.id);
+
+            if (post === FORBIDDEN) {
+                return res.status(403).json({ message: 'You can only modify your own posts' });
+            }
 
             if (!post) {
                 return res.status(404).json({ message: 'Post not found'});
