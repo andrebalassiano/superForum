@@ -22,6 +22,7 @@ model Profile {
   comments     Comment[]
   postVotes    PostVote[]
   commentVotes CommentVote[]
+  communities  Community[]
 }
 
 
@@ -78,7 +79,12 @@ model Community {
 
   name        String        @unique
 
+  ownerId     String        @db.Uuid
+  owner       Profile       @relation(fields: [ownerId], references: [id], onDelete: Restrict)
+
   posts       Post[]
+
+  @@index([ownerId])
 }
 
 

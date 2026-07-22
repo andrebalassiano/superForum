@@ -2,9 +2,14 @@ import communitiesRepository from './communities.repository';
 import { Prisma } from '../../generated/prisma/client';
 import { CreateCommunityDTO, UpdateCommunityDTO } from './communities.schemas';
 
+
+// Returned by update/delete when the caller isn't the community's owner — controller maps it to 403.
+// Distinct from null, which means "no such community" → 404.
+export const FORBIDDEN = 'FORBIDDEN' as const;
+
 const communitiesService = {
     // check the name isn't taken first — returning null lets the controller respond with 409 instead of letting Prisma throw on the unique constraint
-    async createCommunity(dto: CreateCommunityDTO) {
+    async createCommunity(ownerId: string, dto: CreateCommunityDTO) {
         const existing = await communitiesRepository.findById({ name: dto.name });
 
         if (existing) {
@@ -13,6 +18,12 @@ const communitiesService = {
 
         const data: Prisma.CommunityCreateInput = {
             name: dto.name,
+            // ownerId comes from the authenticated caller (req.user.id), never the request body
+            owner: {
+                connect: {
+                    id: ownerId,
+                },
+            },
         };
 
         return await communitiesRepository.create(data);
@@ -24,7 +35,17 @@ const communitiesService = {
     },
 
     // build the update payload from only the fields that were sent (PATCH semantics)
-    async updateCommunity(id: string, dto: UpdateCommunityDTO) {
+    async updateCommunity(id: string, userId: string, dto: UpdateCommunityDTO) {
+        // Ownership gate: only the owner may edit. Fetch first so we can distinguish
+        // "no such community" (null → 404) from "not yours" (FORBIDDEN → 403).
+        const existing = await communitiesRepository.findById({ id });
+        if (!existing) {
+            return null;
+        }
+        if (existing.ownerId !== userId) {
+            return FORBIDDEN;
+        }
+
         const data: Prisma.CommunityUpdateInput = {};
 
         if (dto.name !== undefined) {
@@ -42,8 +63,16 @@ const communitiesService = {
         }
     },
 
-    // same P2025 trick — delete throws if the row doesn't exist
-    async deleteCommunity(id: string) {
+    // same ownership gate as updateCommunity
+    async deleteCommunity(id: string, userId: string) {
+        const existing = await communitiesRepository.findById({ id });
+        if (!existing) {
+            return null;
+        }
+        if (existing.ownerId !== userId) {
+            return FORBIDDEN;
+        }
+
         try {
             return await communitiesRepository.deleteById({ id });
         } catch (error) {
