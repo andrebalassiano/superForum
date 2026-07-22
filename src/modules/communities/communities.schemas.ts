@@ -1,14 +1,15 @@
 import z from 'zod';
 
-// body shape for POST /communities — trim strips whitespace, min(1) rejects empty strings
+// body shape for POST /communities — trim strips whitespace, min(1) rejects empty strings.
+// .strict() rejects unknown keys with a 400 instead of silently ignoring them.
 export const createCommunitySchema = z.object({
     name: z.string().trim().min(1),
-});
+}).strict();
 
 // body shape for PATCH /communities/:id — all fields optional since PATCH only updates what's sent
 export const updateCommunitySchema = z.object({
     name: z.string().trim().min(1).optional(),
-});
+}).strict();
 
 // reusable schema for any route with a UUID in the URL (e.g. /:id)
 export const idParamsSchema = z.object({

@@ -54,6 +54,11 @@ const postsController = {
             // authorId comes from the verified token, not the client — prevents impersonation
             const post = await postsService.createPost(req.user.id, dto);
 
+            // service returns null when the referenced community doesn't exist (P2025) — map to 404
+            if (!post) {
+                return res.status(404).json({ message: 'Community not found' });
+            }
+
             return res.status(201).json(post);
 
         } catch (error) {

@@ -18,6 +18,11 @@ const commentsController = {
             // authorId comes from the verified token, not the client — prevents impersonation
             const comment = await commentsService.createComment(req.user.id, dto);
 
+            // service returns null when the referenced post doesn't exist (P2025) — map to 404
+            if (!comment) {
+                return res.status(404).json({ message: 'Post not found' });
+            }
+
             return res.status(201).json(comment);
 
         } catch (error) {

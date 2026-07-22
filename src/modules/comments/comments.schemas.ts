@@ -4,17 +4,18 @@ import z from 'zod';
 // (set by requireAuth) so a client can't impersonate another user.
 // postId IS in the body for now; it could also live in the URL (e.g. POST /posts/:postId/comments)
 // but keeping it flat matches the current posts module shape.
+// .strict() rejects unknown keys with a 400 instead of silently ignoring them.
 export const createCommentSchema = z.object({
     content: z.string().trim().min(1),
     timestamp: z.iso.datetime(),
     postId: z.uuid(),
-});
+}).strict();
 
 // body for PATCH /comments/:id — only `content` is editable; postId/authorId/timestamp are immutable
 // (you don't reassign a comment to a different post or backdate it).
 export const updateCommentSchema = z.object({
     content: z.string().trim().min(1).optional(),
-});
+}).strict();
 
 // reusable schema for any route with a UUID in the URL (e.g. /:id)
 export const idParamsSchema = z.object({

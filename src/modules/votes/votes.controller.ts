@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import votesService from './votes.service';
+import votesService, { PROFILE_NOT_FOUND } from './votes.service';
 import {
     CommentIdParamsDTO,
     PostIdParamsDTO,
@@ -23,7 +23,12 @@ const votesController = {
         try {
             const vote = await votesService.setPostVote(req.user.id, postId, req.body);
 
-            // null = the post (or the caller's profile) doesn't exist — Prisma P2025 on the connect path
+            // caller authenticated but never created their Profile row — tell them precisely
+            if (vote === PROFILE_NOT_FOUND) {
+                return res.status(404).json({ message: 'Profile not found — create your profile first' });
+            }
+
+            // null = the post doesn't exist (P2025 on the connect path)
             if (!vote) {
                 return res.status(404).json({ message: 'Post not found' });
             }
@@ -73,6 +78,11 @@ const votesController = {
 
         try {
             const vote = await votesService.setCommentVote(req.user.id, commentId, req.body);
+
+            // caller authenticated but never created their Profile row — tell them precisely
+            if (vote === PROFILE_NOT_FOUND) {
+                return res.status(404).json({ message: 'Profile not found — create your profile first' });
+            }
 
             if (!vote) {
                 return res.status(404).json({ message: 'Comment not found' });

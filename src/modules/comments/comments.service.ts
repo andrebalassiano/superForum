@@ -23,7 +23,16 @@ const commentsService = {
             },
         };
 
-        return await commentsRepository.create(data);
+        // A P2025 here means a connected record didn't exist. The only client-supplied reference is
+        // postId (authorId comes from the verified token), so surface it as a 404 the client can fix.
+        try {
+            return await commentsRepository.create(data);
+        } catch (error) {
+            if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
+                return null;
+            }
+            throw error;
+        }
     },
 
     // userId is optional (req.user?.id from optionalAuth). When provided, the repo includes the

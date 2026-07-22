@@ -37,7 +37,16 @@ const postsService = {
             },
         }
 
-        return await postsRepository.create(data);
+        // A P2025 here means a connected record didn't exist. The only client-supplied reference is
+        // communityId (authorId comes from the verified token), so surface it as a 404 the client can fix.
+        try {
+            return await postsRepository.create(data);
+        } catch (error) {
+            if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
+                return null;
+            }
+            throw error;
+        }
     },
 
     async getPostsByCommunity(communityId: string) {
