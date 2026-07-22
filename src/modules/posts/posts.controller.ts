@@ -96,11 +96,7 @@ const postsController = {
                 return res.status(404).json({ message: 'Post not found'});
             }
 
-            return res.status(200).json({ message: 'Post deleted successfully'});
-            // this later should be changed to .sendStatus(204);
-            // on successful deletion, 204 confirms it, with no required message - as is typical in REST APIs
-            // 200 with a message is easier for debugging at this stage, though
-            // CHANGEFLAG
+            return res.sendStatus(204);
 
         } catch (error) {
             console.error(error);

@@ -67,7 +67,6 @@ const communitiesController = {
                 return res.status(404).json({ message: 'Community not found' });
             }
 
-            // 204 No Content is the REST standard for a successful delete — nothing to send back
             return res.sendStatus(204);
 
         } catch (error) {
