@@ -23,7 +23,7 @@ Routes are grouped by resource. Reads are generally public; writes require a bea
 
 **Posts.** `GET /posts` lists them and `GET /posts/:id` reads one — both public, both enriched with your current vote if you're authenticated. `POST /posts` creates a post, and `PATCH`/`DELETE /posts/:id` edit and remove it.
 
-**Comments.** `POST /comments` creates a comment and `GET /comments/:id` reads one (public, vote-enriched if authenticated). `PATCH` and `DELETE /comments/:id` edit and remove it. There's also `GET /posts/:postId/comments` to list a post's comments.
+**Comments.** A comment belongs to a post, so it's created under one: `POST /posts/:postId/comments`, with the post id in the URL rather than the body. `GET /posts/:postId/comments` lists a post's comments. A single comment is read at `GET /comments/:id` (public, vote-enriched if authenticated), and `PATCH`/`DELETE /comments/:id` edit and remove it.
 
 **Votes.** Voting is idempotent. `PUT /posts/:postId/vote` sets your vote to either `1` or `-1` — it's an upsert underneath, so calling it again just overwrites your previous vote — and `DELETE /posts/:postId/vote` takes it back. Comments work identically at `/comments/:commentId/vote`. There's deliberately no "zero" vote: removing a vote is a `DELETE`, which keeps the votes table free of meaningless zero rows.
 
@@ -75,7 +75,7 @@ The same suite runs on every push and pull request through GitHub Actions — th
 
 ## Still to come
 
-The core is in place and covered by tests. The next obvious step is exposing comment creation under its post, as `POST /posts/:postId/comments`, to match the nested read and vote routes; for now a comment is created with `POST /comments` carrying the post id in the body.
+The core is complete and covered by tests. The main thing I'd reach for next is pagination on the list endpoints — `GET /posts` and a post's comments currently return everything, which is fine at this size but is the obvious next step for anything resembling a real feed.
 
 ## Credits
 

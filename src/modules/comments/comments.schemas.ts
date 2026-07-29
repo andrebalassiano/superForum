@@ -1,14 +1,12 @@
 import z from 'zod';
 
-// body for POST /comments — authorId is intentionally NOT here; it comes from req.user.id
-// (set by requireAuth) so a client can't impersonate another user.
-// postId IS in the body for now; it could also live in the URL (e.g. POST /posts/:postId/comments)
-// but keeping it flat matches the current posts module shape.
-// .strict() rejects unknown keys with a 400 instead of silently ignoring them.
-export const createCommentSchema = z.object({
+// body for POST /posts/:postId/comments — a comment is a sub-resource of a post, so postId
+// comes from the URL, not the body; authorId comes from req.user.id (set by requireAuth).
+// Neither is accepted in the body, so a client can't impersonate a user or reassign a post.
+// .strict() rejects unknown keys with a 400 (including a stray postId) instead of ignoring them.
+export const createCommentBodySchema = z.object({
     content: z.string().trim().min(1),
     timestamp: z.iso.datetime(),
-    postId: z.uuid(),
 }).strict();
 
 // body for PATCH /comments/:id — only `content` is editable; postId/authorId/timestamp are immutable
@@ -29,7 +27,7 @@ export const postIdParamsSchema = z.object({
 });
 
 // DTOs inferred from the schemas — one source of truth for runtime validation and TS types
-export type CreateCommentDTO = z.infer<typeof createCommentSchema>;
+export type CreateCommentBodyDTO = z.infer<typeof createCommentBodySchema>;
 export type UpdateCommentDTO = z.infer<typeof updateCommentSchema>;
 export type IdParamsDTO = z.infer<typeof idParamsSchema>;
 export type PostIdParamsDTO = z.infer<typeof postIdParamsSchema>;

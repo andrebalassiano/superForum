@@ -1,6 +1,6 @@
 import commentsRepository from './comments.repository';
 import { Prisma } from '../../generated/prisma/client';
-import { CreateCommentDTO, UpdateCommentDTO } from './comments.schemas';
+import { CreateCommentBodyDTO, UpdateCommentDTO } from './comments.schemas';
 
 
 // Returned by update/delete when the caller isn't the comment's author — controller maps it to 403.
@@ -9,9 +9,9 @@ export const FORBIDDEN = 'FORBIDDEN' as const;
 
 const commentsService = {
 
-    // authorId comes from the authenticated caller (req.user.id), not the request body —
-    // same impersonation-prevention pattern we applied to posts.
-    async createComment(authorId: string, dto: CreateCommentDTO) {
+    // authorId comes from the authenticated caller (req.user.id) and postId from the URL —
+    // neither is taken from the body, closing the impersonation / post-reassignment holes.
+    async createComment(authorId: string, postId: string, dto: CreateCommentBodyDTO) {
         const data: Prisma.CommentCreateInput = {
             content: dto.content,
             timestamp: dto.timestamp,
@@ -22,13 +22,13 @@ const commentsService = {
             },
             post: {
                 connect: {
-                    id: dto.postId,
+                    id: postId,
                 },
             },
         };
 
         // A P2025 here means a connected record didn't exist. The only client-supplied reference is
-        // postId (authorId comes from the verified token), so surface it as a 404 the client can fix.
+        // postId from the URL (authorId comes from the verified token), so surface it as a 404.
         try {
             return await commentsRepository.create(data);
         } catch (error) {

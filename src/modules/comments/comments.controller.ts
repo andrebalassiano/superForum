@@ -1,22 +1,31 @@
 import { Request, Response } from 'express';
 import commentsService, { FORBIDDEN } from './comments.service';
-import { CreateCommentDTO, IdParamsDTO, UpdateCommentDTO } from './comments.schemas';
+import {
+    CreateCommentBodyDTO,
+    IdParamsDTO,
+    PostIdParamsDTO,
+    UpdateCommentDTO,
+} from './comments.schemas';
 
 
 const commentsController = {
 
-    async createComment(req: Request<object, object, CreateCommentDTO>, res: Response) {
+    // Mounted at POST /posts/:postId/comments — postId comes from the URL, authorId from the token.
+    async createCommentForPost(
+        req: Request<PostIdParamsDTO, object, CreateCommentBodyDTO>,
+        res: Response,
+    ) {
 
         // defensive check — requireAuth should guarantee req.user, but TS doesn't know that
         if (!req.user) {
             return res.status(401).json({ message: 'Unauthorized' });
         }
 
-        try {
-            const dto = req.body;
+        const { postId } = req.params;
 
-            // authorId comes from the verified token, not the client — prevents impersonation
-            const comment = await commentsService.createComment(req.user.id, dto);
+        try {
+            // authorId from the verified token, postId from the URL — neither from the body
+            const comment = await commentsService.createComment(req.user.id, postId, req.body);
 
             // service returns null when the referenced post doesn't exist (P2025) — map to 404
             if (!comment) {

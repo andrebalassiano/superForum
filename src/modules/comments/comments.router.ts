@@ -5,20 +5,16 @@ import optionalAuth from '../../middleware/optionalAuth';
 import validateBody from '../../middleware/validateBody';
 import validateParams from '../../middleware/validateParams';
 import {
-    createCommentSchema,
+    createCommentBodySchema,
     updateCommentSchema,
     idParamsSchema,
     postIdParamsSchema,
 } from './comments.schemas';
 
 
-// CRUD on a single comment, mounted at /comments in the main router
+// Single-comment routes (read / update / delete), mounted at /comments in the main router.
+// Creation lives on the nested postCommentsRouter below, since a comment belongs to a post.
 const commentsRouter = express.Router();
-
-// Create a comment — auth required so authorId can be pulled from req.user.id, body validated
-commentsRouter
-    .route('/')
-    .post(requireAuth, validateBody(createCommentSchema), commentsController.createComment);
 
 // Read uses optionalAuth so the controller can fold in currentUserVote when the caller is known;
 // update/delete still require hard auth. :id is validated as a UUID for every verb on this route.
@@ -39,11 +35,18 @@ commentsRouter
 // (otherwise req.params.postId would be undefined here).
 const postCommentsRouter = express.Router({ mergeParams: true });
 
-// List all comments on a given post — public read with optionalAuth for currentUserVote enrichment.
-// :postId in the URL is validated as a UUID.
+// GET  — list all comments on a post (public; optionalAuth folds in currentUserVote).
+// POST — create a comment on the post; requires auth, postId taken from the URL, body validated.
+// :postId is validated as a UUID for both verbs.
 postCommentsRouter
     .route('/')
-    .get(optionalAuth, validateParams(postIdParamsSchema), commentsController.getCommentsByPostId);
+    .get(optionalAuth, validateParams(postIdParamsSchema), commentsController.getCommentsByPostId)
+    .post(
+        requireAuth,
+        validateParams(postIdParamsSchema),
+        validateBody(createCommentBodySchema),
+        commentsController.createCommentForPost,
+    );
 
 
 export default commentsRouter;

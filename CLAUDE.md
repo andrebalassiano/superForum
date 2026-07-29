@@ -48,7 +48,7 @@ All five modules are implemented and wired into the main router (`src/routers/in
 - `auth` — profiles + current-user resolution (`POST /auth/profile`, `GET /auth/me`, `GET /auth/profiles/:id`)
 - `posts` — full CRUD; write routes require `requireAuth` and run `validateBody`/`validateParams`; `authorId` comes from `req.user.id` (not the body); reads use `optionalAuth` and include `currentUserVote`; PATCH/DELETE enforce author ownership
 - `communities` — full CRUD (renamed from `subreddits` on 2026-07-20); has an `ownerId`; PATCH/DELETE enforce owner ownership
-- `comments` — full CRUD, plus the nested list route `GET /posts/:postId/comments`; PATCH/DELETE enforce author ownership
+- `comments` — full CRUD; create and list are nested under the post (`POST`/`GET /posts/:postId/comments`, `postId` from the URL), read/update/delete a single comment at `/comments/:id`; PATCH/DELETE enforce author ownership
 - `votes` — post & comment votes via `PUT`/`DELETE` on `/posts/:postId/vote` and `/comments/:commentId/vote` (upsert toggle); `userId` from the token
 
 ## Key conventions
@@ -131,9 +131,10 @@ Automated testing + CI landed and merged to `main` (PR #1, merge commit `c56cd41
 
 ### Known rough edges (still deferred)
 
-1. Nested `POST /posts/:postId/comments` still not exposed — comment create is `POST /comments` with `postId` in the body. Now flagged in the README "Still to come".
-2. Create-post when the *author's* own Profile row is missing returns a misleading `404 "Community not found"`.
+1. Create-post when the *author's* own Profile row is missing returns a misleading `404 "Community not found"`.
+
+(Resolved 2026-07-25: the nested `POST /posts/:postId/comments` is now exposed and the flat `POST /comments` removed — comment create takes `postId` from the URL. Docs, tests, and README updated.)
 
 ### Next steps — full prioritized list in the `project-refinement-backlog` memory
 
-Recommended order for portfolio ROI: **commit the Postman collection** → **expose nested comment POST** (rough edge 1) → **fix the author-profile 404** (rough edge 2) → **real-token hybrid auth test + coverage bump**. Bigger optional stretch: API-maturity features (pagination first).
+Recommended order for portfolio ROI: **commit the Postman collection** → **fix the author-profile 404** (rough edge 1) → **real-token hybrid auth test + coverage bump**. Bigger optional stretch: API-maturity features (pagination first).

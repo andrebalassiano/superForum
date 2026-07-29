@@ -14,49 +14,50 @@ beforeEach(async () => {
     postId = (await makePost(TEST_USERS.alice.id, community.id)).id;
 });
 
-function validCommentBody(pid: string) {
-    return { content: 'A comment', timestamp: new Date().toISOString(), postId: pid };
+function validCommentBody() {
+    return { content: 'A comment', timestamp: new Date().toISOString() };
 }
 
-describe('comments: POST /api/comments', () => {
-    it('creates a comment with authorId from the token', async () => {
+describe('comments: POST /api/posts/:postId/comments', () => {
+    it('creates a comment with authorId from the token and postId from the URL', async () => {
         const res = await request(app)
-            .post('/api/comments')
+            .post(`/api/posts/${postId}/comments`)
             .set('Authorization', authHeader(TEST_USERS.alice))
-            .send(validCommentBody(postId));
+            .send(validCommentBody());
 
         expect(res.status).toBe(201);
         expect(res.body.authorId).toBe(TEST_USERS.alice.id);
+        expect(res.body.postId).toBe(postId);
     });
 
     it('returns 401 without a token', async () => {
-        const res = await request(app).post('/api/comments').send(validCommentBody(postId));
+        const res = await request(app).post(`/api/posts/${postId}/comments`).send(validCommentBody());
         expect(res.status).toBe(401);
     });
 
-    it('returns 400 on an unknown key (.strict)', async () => {
+    it('returns 400 when postId is sent in the body (it belongs in the URL)', async () => {
         const res = await request(app)
-            .post('/api/comments')
+            .post(`/api/posts/${postId}/comments`)
             .set('Authorization', authHeader(TEST_USERS.alice))
-            .send({ ...validCommentBody(postId), authorId: TEST_USERS.bob.id });
+            .send({ ...validCommentBody(), postId });
 
         expect(res.status).toBe(400);
     });
 
     it('returns 400 on empty content', async () => {
         const res = await request(app)
-            .post('/api/comments')
+            .post(`/api/posts/${postId}/comments`)
             .set('Authorization', authHeader(TEST_USERS.alice))
-            .send({ ...validCommentBody(postId), content: '  ' });
+            .send({ ...validCommentBody(), content: '  ' });
 
         expect(res.status).toBe(400);
     });
 
-    it('returns 404 when postId references no post', async () => {
+    it('returns 404 when the post does not exist', async () => {
         const res = await request(app)
-            .post('/api/comments')
+            .post(`/api/posts/${randomUUID()}/comments`)
             .set('Authorization', authHeader(TEST_USERS.alice))
-            .send(validCommentBody(randomUUID()));
+            .send(validCommentBody());
 
         expect(res.status).toBe(404);
     });
