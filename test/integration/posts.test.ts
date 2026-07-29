@@ -1,0 +1,163 @@
+import { describe, it, expect, beforeEach } from 'vitest';
+import { randomUUID } from 'node:crypto';
+import request from 'supertest';
+import app from '../../src/app';
+import { TEST_USERS, authHeader } from '../helpers/auth';
+import { makeProfile, makeCommunity, makePost } from '../helpers/seed';
+
+// Alice authors content; Bob is a second real user used for the ownership (403) paths.
+// Both need a Profile row, and Alice needs a Community to post into.
+async function arrange() {
+    await makeProfile(TEST_USERS.alice, 'alice');
+    await makeProfile(TEST_USERS.bob, 'bob');
+    const community = await makeCommunity(TEST_USERS.alice.id);
+    return { community };
+}
+
+function validPostBody(communityId: string) {
+    return {
+        title: 'A title',
+        content: 'Some content',
+        timestamp: new Date().toISOString(),
+        communityId,
+    };
+}
+
+describe('posts: POST /api/posts', () => {
+    let communityId: string;
+    beforeEach(async () => {
+        communityId = (await arrange()).community.id;
+    });
+
+    it('creates a post with authorId from the token', async () => {
+        const res = await request(app)
+            .post('/api/posts')
+            .set('Authorization', authHeader(TEST_USERS.alice))
+            .send(validPostBody(communityId));
+
+        expect(res.status).toBe(201);
+        expect(res.body.authorId).toBe(TEST_USERS.alice.id);
+    });
+
+    it('returns 401 without a token', async () => {
+        const res = await request(app).post('/api/posts').send(validPostBody(communityId));
+        expect(res.status).toBe(401);
+    });
+
+    it('returns 400 on an unknown key (.strict)', async () => {
+        const res = await request(app)
+            .post('/api/posts')
+            .set('Authorization', authHeader(TEST_USERS.alice))
+            .send({ ...validPostBody(communityId), sneaky: true });
+
+        expect(res.status).toBe(400);
+    });
+
+    it('returns 400 on an empty title', async () => {
+        const res = await request(app)
+            .post('/api/posts')
+            .set('Authorization', authHeader(TEST_USERS.alice))
+            .send({ ...validPostBody(communityId), title: '   ' });
+
+        expect(res.status).toBe(400);
+    });
+
+    it('returns 404 when communityId references no community', async () => {
+        const res = await request(app)
+            .post('/api/posts')
+            .set('Authorization', authHeader(TEST_USERS.alice))
+            .send(validPostBody(randomUUID()));
+
+        expect(res.status).toBe(404);
+    });
+});
+
+describe('posts: reads', () => {
+    it('GET /api/posts returns a list', async () => {
+        const { community } = await arrange();
+        await makePost(TEST_USERS.alice.id, community.id);
+
+        const res = await request(app).get('/api/posts');
+        expect(res.status).toBe(200);
+        expect(Array.isArray(res.body)).toBe(true);
+        expect(res.body.length).toBe(1);
+    });
+
+    it('GET /api/posts/:id returns the post', async () => {
+        const { community } = await arrange();
+        const post = await makePost(TEST_USERS.alice.id, community.id);
+
+        const res = await request(app).get(`/api/posts/${post.id}`);
+        expect(res.status).toBe(200);
+        expect(res.body.id).toBe(post.id);
+    });
+
+    it('GET /api/posts/:id returns 404 for a missing post', async () => {
+        const res = await request(app).get(`/api/posts/${randomUUID()}`);
+        expect(res.status).toBe(404);
+    });
+
+    it('GET /api/posts/:id returns 400 for a non-UUID id', async () => {
+        const res = await request(app).get('/api/posts/not-a-uuid');
+        expect(res.status).toBe(400);
+    });
+});
+
+describe('posts: ownership on PATCH/DELETE', () => {
+    it('lets the author update their own post', async () => {
+        const { community } = await arrange();
+        const post = await makePost(TEST_USERS.alice.id, community.id);
+
+        const res = await request(app)
+            .patch(`/api/posts/${post.id}`)
+            .set('Authorization', authHeader(TEST_USERS.alice))
+            .send({ title: 'Edited' });
+
+        expect(res.status).toBe(200);
+        expect(res.body.title).toBe('Edited');
+    });
+
+    it('forbids a non-author from updating (403)', async () => {
+        const { community } = await arrange();
+        const post = await makePost(TEST_USERS.alice.id, community.id);
+
+        const res = await request(app)
+            .patch(`/api/posts/${post.id}`)
+            .set('Authorization', authHeader(TEST_USERS.bob))
+            .send({ title: 'Hijacked' });
+
+        expect(res.status).toBe(403);
+    });
+
+    it('returns 404 when updating a missing post', async () => {
+        await arrange();
+        const res = await request(app)
+            .patch(`/api/posts/${randomUUID()}`)
+            .set('Authorization', authHeader(TEST_USERS.alice))
+            .send({ title: 'Nope' });
+
+        expect(res.status).toBe(404);
+    });
+
+    it('lets the author delete their own post (204)', async () => {
+        const { community } = await arrange();
+        const post = await makePost(TEST_USERS.alice.id, community.id);
+
+        const res = await request(app)
+            .delete(`/api/posts/${post.id}`)
+            .set('Authorization', authHeader(TEST_USERS.alice));
+
+        expect(res.status).toBe(204);
+    });
+
+    it('forbids a non-author from deleting (403)', async () => {
+        const { community } = await arrange();
+        const post = await makePost(TEST_USERS.alice.id, community.id);
+
+        const res = await request(app)
+            .delete(`/api/posts/${post.id}`)
+            .set('Authorization', authHeader(TEST_USERS.bob));
+
+        expect(res.status).toBe(403);
+    });
+});
