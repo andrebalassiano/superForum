@@ -115,6 +115,25 @@ Built incrementally as a learning exercise — Andre reviews each step and wants
 
 ### Next steps
 
-1. Add an automated integration test suite over the core endpoints — the Postman collection (happy-path + negative-path complete) is the spec — then a GitHub Actions CI workflow.
-2. Add CI-passing + coverage badges to the README once tests + CI exist; consider committing the Postman collection (a `postman/` folder + a "Run in Postman" button).
-3. Expose the nested `POST /posts/:postId/comments` and clear the remaining rough edges above.
+Superseded by the 2026-07-25 checkpoint below.
+
+## Checkpoint — 2026-07-25
+
+Automated testing + CI landed and merged to `main` (PR #1, merge commit `c56cd41`, two feature commits `e8b612e`/`e91548b`). superForum's last portfolio gap — no tests — is closed. Working tree clean.
+
+### What shipped since 2026-07-21
+
+- **Integration test suite**: 66 Vitest + supertest tests across all five modules, driving the real Express app end-to-end. Supabase auth is mocked at the client boundary (`test/setup/each-setup.ts`, two users Alice/Bob) so no real tokens are needed; runs against a throwaway Postgres (Docker `docker-compose.test.yml` on :5433 locally, a GitHub Actions service container in CI), migrated fresh and truncated between tests. Run with `npm test` / `npm run test:coverage`. Local test DB needs `.env.test` (copy from `.env.test.example`) and the container up. Harness + the Prisma-client-under-Vite gotcha (solved by a `prismaTsResolver` plugin in `vitest.config.ts`) are detailed in the `project-test-suite-plan` memory.
+- **GitHub Actions CI** (`.github/workflows/ci.yml`): Node 24, Postgres service container, steps checkout → `npm ci` → `prisma generate` (client is git-ignored) → `prisma migrate deploy` → `npm run typecheck` → `npm run test:coverage` → single Codecov upload (`codecov/codecov-action@v5`, `CODECOV_TOKEN` repo secret). Triggers on push to `main` + all PRs. First run green in 54s.
+- **Codecov** wired; coverage badge live (~69% — the gap is unreachable 500-catch/`if(!req.user)` guards, not missed behavior). README shows CI + coverage badges.
+- **README refreshed (2026-07-25)**: added the ownership/403 decision, a Tests section, and replaced the stale "Still to come" (it had listed ownership/FK-404/tests as undone — the opposite of reality). Prose-first, no-AI-tells voice preserved.
+- **Tooling**: `gh` CLI installed + authed on Andre's machine.
+
+### Known rough edges (still deferred)
+
+1. Nested `POST /posts/:postId/comments` still not exposed — comment create is `POST /comments` with `postId` in the body. Now flagged in the README "Still to come".
+2. Create-post when the *author's* own Profile row is missing returns a misleading `404 "Community not found"`.
+
+### Next steps — full prioritized list in the `project-refinement-backlog` memory
+
+Recommended order for portfolio ROI: **commit the Postman collection** → **expose nested comment POST** (rough edge 1) → **fix the author-profile 404** (rough edge 2) → **real-token hybrid auth test + coverage bump**. Bigger optional stretch: API-maturity features (pagination first).

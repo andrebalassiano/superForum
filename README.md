@@ -33,6 +33,8 @@ Every write route (and everything above marked as requiring auth) goes through t
 
 The one I care most about is that **a user's identity always comes from their token, never from the request body.** When you create a post or a comment, there's no `authorId` field to send — the server pulls it from the verified JWT. An earlier version trusted an `authorId` in the body, which meant anyone could post as anyone else; pulling it from the token closes that hole.
 
+Identity is only half of it. The other half is **ownership: you can only change your own things.** Editing or deleting a post or comment checks that your id matches the author's, and a community checks it against its owner. When it doesn't match, the answer is a 403 rather than a 404 — the difference between "that isn't yours" and "that doesn't exist" stays honest instead of collapsing into one status. The check lives in the service layer, which fetches the row and compares before it writes anything.
+
 There are **two auth middlewares** rather than one. `requireAuth` is the strict gate: no valid token, no entry, straight to 401. `optionalAuth` is softer — it attaches the user if there's a valid token but waves everyone else through as anonymous. That's what lets the public feed keep working for someone whose session just expired, while still personalizing it for signed-in readers.
 
 **Validation happens at the edge.** The Zod schemas run as middleware before any handler code, so a controller never has to defend against a malformed body — by the time it runs, the input is already the right shape. The same schemas also generate the TypeScript types via `z.infer`, so there's a single source of truth for both the runtime check and the compile-time type.
@@ -59,9 +61,21 @@ The `.env.example` file explains where each value comes from. In short: `DATABAS
 
 One thing to know: the Prisma client is generated into `src/generated/prisma` rather than the usual `node_modules` location, so `npx prisma generate` isn't optional — skip it and the imports won't resolve.
 
+## Tests
+
+The suite is written with Vitest and supertest, and it drives the real Express app end to end: every test fires an actual HTTP request and checks both the response and the state left in the database. Rather than reach out to Supabase over the network, it mocks the auth boundary so a known test user resolves straight from the bearer token — that keeps the tests fast and free of real credentials. It runs against a throwaway Postgres (a Docker container locally, a service container in CI), migrated fresh and truncated between tests so each one starts from an empty database.
+
+```bash
+docker compose -f docker-compose.test.yml up -d   # throwaway Postgres on :5433
+cp .env.test.example .env.test
+npm test                                          # or: npm run test:coverage
+```
+
+The same suite runs on every push and pull request through GitHub Actions — that's what the CI and coverage badges at the top report.
+
 ## Still to come
 
-A few things are on the list: enforcing ownership on edits and deletes so people can only change their own content, mapping foreign-key violations to a 404 instead of a 500, and a proper integration test suite over the main endpoints.
+The core is in place and covered by tests. The next obvious step is exposing comment creation under its post, as `POST /posts/:postId/comments`, to match the nested read and vote routes; for now a comment is created with `POST /comments` carrying the post id in the body.
 
 ## Credits
 
