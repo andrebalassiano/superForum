@@ -1,5 +1,8 @@
 # superForum
 
+[![CI](https://github.com/andrebalassiano/superForum/actions/workflows/ci.yml/badge.svg)](https://github.com/andrebalassiano/superForum/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/andrebalassiano/superForum/branch/main/graph/badge.svg)](https://codecov.io/gh/andrebalassiano/superForum)
+
 superForum is a Reddit-style forum API. It lets people register, spin up communities, write posts and comments, and vote on them. It's a REST backend written in TypeScript on Express 5, with Prisma 7 talking to a Postgres database and Supabase handling authentication. Every write is authenticated with a server-verified JWT and validated with Zod before it reaches the database.
 
 I built it partly as a learning project and partly as a reference for how I like to structure a Node backend, so the emphasis throughout is on a clean, predictable layout rather than clever shortcuts.
