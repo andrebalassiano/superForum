@@ -29,6 +29,10 @@ Routes are grouped by resource. Reads are generally public; writes require a bea
 
 Every write route (and everything above marked as requiring auth) goes through the same JWT check, and every route with a body or an id in the URL is validated by Zod first.
 
+## Try it in Postman
+
+The full request collection lives in [`postman/`](postman/superForum.postman_collection.json) — an end-to-end walkthrough (sign in → community → post → comment → vote → teardown), with the requests ordered as a resource lifecycle so it runs top to bottom in a single pass. Import that file into Postman, then create an environment with `baseUrl` set to `http://localhost:3000/api` plus your `supabaseUrl` and `supabaseKey`; the collection captures the auth token and the record ids automatically as it runs. It can also run headless with `newman`.
+
 ## A few decisions worth explaining
 
 The one I care most about is that **a user's identity always comes from their token, never from the request body.** When you create a post or a comment, there's no `authorId` field to send — the server pulls it from the verified JWT. An earlier version trusted an `authorId` in the body, which meant anyone could post as anyone else; pulling it from the token closes that hole.
