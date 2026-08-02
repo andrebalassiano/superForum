@@ -1,4 +1,5 @@
 import postsRepository from './posts.repository';
+import authRepository from '../auth/auth.repository';
 import { CreatePostDTO, UpdatePostDTO } from './posts.schemas';
 import { Prisma } from '../../generated/prisma/client';
 
@@ -6,6 +7,11 @@ import { Prisma } from '../../generated/prisma/client';
 // Returned by update/delete when the caller isn't the post's author — the controller maps it to 403.
 // Distinct from null, which means "no such post" → 404.
 export const FORBIDDEN = 'FORBIDDEN' as const;
+
+// Returned by createPost when the caller's Profile row doesn't exist yet — they authenticated with
+// Supabase but never ran POST /auth/profile. Lets the controller answer precisely instead of a
+// misleading "Community not found" (the author connect would also throw P2025).
+export const PROFILE_NOT_FOUND = 'PROFILE_NOT_FOUND' as const;
 
 const postsService = {
 
@@ -25,6 +31,14 @@ const postsService = {
 
     // authorId now comes from the authenticated caller (req.user.id), not the request body
     async createPost(authorId: string, dto: CreatePostDTO) {
+        // Pre-check the caller's Profile so a missing profile returns a precise 404 instead of
+        // masquerading as "Community not found" — the author connect below would also throw P2025.
+        // The community's existence is still checked atomically by the connect.
+        const profile = await authRepository.findProfileById(authorId);
+        if (!profile) {
+            return PROFILE_NOT_FOUND;
+        }
+
         const data: Prisma.PostCreateInput = {
             title: dto.title,
             content: dto.content,

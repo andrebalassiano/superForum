@@ -1,4 +1,5 @@
 import commentsRepository from './comments.repository';
+import authRepository from '../auth/auth.repository';
 import { Prisma } from '../../generated/prisma/client';
 import { CreateCommentBodyDTO, UpdateCommentDTO } from './comments.schemas';
 
@@ -7,11 +8,24 @@ import { CreateCommentBodyDTO, UpdateCommentDTO } from './comments.schemas';
 // Distinct from null, which means "no such comment" → 404.
 export const FORBIDDEN = 'FORBIDDEN' as const;
 
+// Returned by createComment when the caller's Profile row doesn't exist yet — authenticated with
+// Supabase but never ran POST /auth/profile. Lets the controller answer precisely instead of a
+// misleading "Post not found" (the author connect would also throw P2025).
+export const PROFILE_NOT_FOUND = 'PROFILE_NOT_FOUND' as const;
+
 const commentsService = {
 
     // authorId comes from the authenticated caller (req.user.id) and postId from the URL —
     // neither is taken from the body, closing the impersonation / post-reassignment holes.
     async createComment(authorId: string, postId: string, dto: CreateCommentBodyDTO) {
+        // Pre-check the caller's Profile so a missing profile returns a precise 404 instead of
+        // masquerading as "Post not found" — the author connect below would also throw P2025.
+        // The post's existence is still checked atomically by the connect.
+        const profile = await authRepository.findProfileById(authorId);
+        if (!profile) {
+            return PROFILE_NOT_FOUND;
+        }
+
         const data: Prisma.CommentCreateInput = {
             content: dto.content,
             timestamp: dto.timestamp,

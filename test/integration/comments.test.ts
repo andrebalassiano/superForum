@@ -4,6 +4,7 @@ import request from 'supertest';
 import app from '../../src/app';
 import { TEST_USERS, authHeader } from '../helpers/auth';
 import { makeProfile, makeCommunity, makePost, makeComment } from '../helpers/seed';
+import prisma from '../../src/core/prismaSingleton';
 
 let postId: string;
 
@@ -60,6 +61,20 @@ describe('comments: POST /api/posts/:postId/comments', () => {
             .send(validCommentBody());
 
         expect(res.status).toBe(404);
+    });
+
+    it('returns 404 with a profile message when the author has no profile row', async () => {
+        // Bob is authenticated but has no profile — drop the one the setup seeded so the
+        // failure is the author connect, not the post (which exists). Bob owns nothing yet.
+        await prisma.profile.delete({ where: { id: TEST_USERS.bob.id } });
+
+        const res = await request(app)
+            .post(`/api/posts/${postId}/comments`)
+            .set('Authorization', authHeader(TEST_USERS.bob))
+            .send(validCommentBody());
+
+        expect(res.status).toBe(404);
+        expect(res.body.message).toMatch(/profile/i);
     });
 });
 

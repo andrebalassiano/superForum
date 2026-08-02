@@ -129,12 +129,12 @@ Automated testing + CI landed and merged to `main` (PR #1, merge commit `c56cd41
 - **README refreshed (2026-07-25)**: added the ownership/403 decision, a Tests section, and replaced the stale "Still to come" (it had listed ownership/FK-404/tests as undone — the opposite of reality). Prose-first, no-AI-tells voice preserved.
 - **Tooling**: `gh` CLI installed + authed on Andre's machine.
 
-### Known rough edges (still deferred)
+### Known rough edges
 
-1. Create-post when the *author's* own Profile row is missing returns a misleading `404 "Community not found"`.
-
-(Resolved 2026-07-25: the nested `POST /posts/:postId/comments` is now exposed and the flat `POST /comments` removed — comment create takes `postId` from the URL. Docs, tests, and README updated.)
+None outstanding. Recently resolved:
+- **Author-profile 404 (2026-08-01):** `createPost`/`createComment` now pre-check the caller's Profile (`authRepository.findProfileById`) and return a `PROFILE_NOT_FOUND` sentinel → controller answers `404 "Profile not found — create your profile first"`, instead of the old misleading "Community/Post not found". Mirrors the votes module. +2 Vitest tests (68 total).
+- **Nested comment route (2026-07-25):** `POST /posts/:postId/comments` exposed, flat `POST /comments` removed — `postId` comes from the URL.
 
 ### Next steps — full prioritized list in the `project-refinement-backlog` memory
 
-Recommended order for portfolio ROI: **commit the Postman collection** → **fix the author-profile 404** (rough edge 1) → **real-token hybrid auth test + coverage bump**. Bigger optional stretch: API-maturity features (pagination first).
+The two portfolio-facing items (Postman collection, author-profile 404) are done. Remaining, in ROI order: **real-token hybrid auth test + coverage bump** → then API-maturity (pagination first). newman-in-CI is optional and overlaps with the real-token work.

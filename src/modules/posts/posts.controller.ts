@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import postsService, { FORBIDDEN } from './posts.service';
+import postsService, { FORBIDDEN, PROFILE_NOT_FOUND } from './posts.service';
 import { CreatePostDTO, IdParamsDTO } from './posts.schemas';
 
 
@@ -53,6 +53,11 @@ const postsController = {
 
             // authorId comes from the verified token, not the client — prevents impersonation
             const post = await postsService.createPost(req.user.id, dto);
+
+            // caller authenticated but never created their Profile row — tell them precisely
+            if (post === PROFILE_NOT_FOUND) {
+                return res.status(404).json({ message: 'Profile not found — create your profile first' });
+            }
 
             // service returns null when the referenced community doesn't exist (P2025) — map to 404
             if (!post) {

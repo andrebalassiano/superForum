@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import commentsService, { FORBIDDEN } from './comments.service';
+import commentsService, { FORBIDDEN, PROFILE_NOT_FOUND } from './comments.service';
 import {
     CreateCommentBodyDTO,
     IdParamsDTO,
@@ -26,6 +26,11 @@ const commentsController = {
         try {
             // authorId from the verified token, postId from the URL — neither from the body
             const comment = await commentsService.createComment(req.user.id, postId, req.body);
+
+            // caller authenticated but never created their Profile row — tell them precisely
+            if (comment === PROFILE_NOT_FOUND) {
+                return res.status(404).json({ message: 'Profile not found — create your profile first' });
+            }
 
             // service returns null when the referenced post doesn't exist (P2025) — map to 404
             if (!comment) {

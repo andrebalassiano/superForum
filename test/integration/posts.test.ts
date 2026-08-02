@@ -72,6 +72,23 @@ describe('posts: POST /api/posts', () => {
     });
 });
 
+describe('posts: create when the author has no profile', () => {
+    it('returns 404 with a profile message, not "Community not found"', async () => {
+        // Only Alice gets a profile + community. Bob is authenticated (token resolves) but
+        // never created a profile — so the failure is the author connect, not the community.
+        await makeProfile(TEST_USERS.alice, 'alice');
+        const community = await makeCommunity(TEST_USERS.alice.id);
+
+        const res = await request(app)
+            .post('/api/posts')
+            .set('Authorization', authHeader(TEST_USERS.bob))
+            .send(validPostBody(community.id));
+
+        expect(res.status).toBe(404);
+        expect(res.body.message).toMatch(/profile/i);
+    });
+});
+
 describe('posts: reads', () => {
     it('GET /api/posts returns a list', async () => {
         const { community } = await arrange();
