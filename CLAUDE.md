@@ -46,7 +46,7 @@ router → controller → service → repository
 All five modules are implemented and wired into the main router (`src/routers/index.ts`):
 
 - `auth` — profiles + current-user resolution (`POST /auth/profile`, `GET /auth/me`, `GET /auth/profiles/:id`)
-- `posts` — full CRUD; write routes require `requireAuth` and run `validateBody`/`validateParams`; `authorId` comes from `req.user.id` (not the body); reads use `optionalAuth` and include `currentUserVote`; PATCH/DELETE enforce author ownership
+- `posts` — full CRUD; write routes require `requireAuth` and run `validateBody`/`validateParams`; `authorId` comes from `req.user.id` (not the body); reads use `optionalAuth` and include `currentUserVote`; `GET /posts` is cursor-paginated (`?limit=&cursor=` → `{ items, nextCursor }`); PATCH/DELETE enforce author ownership
 - `communities` — full CRUD (renamed from `subreddits` on 2026-07-20); has an `ownerId`; PATCH/DELETE enforce owner ownership
 - `comments` — full CRUD; create and list are nested under the post (`POST`/`GET /posts/:postId/comments`, `postId` from the URL), read/update/delete a single comment at `/comments/:id`; PATCH/DELETE enforce author ownership
 - `votes` — post & comment votes via `PUT`/`DELETE` on `/posts/:postId/vote` and `/comments/:commentId/vote` (upsert toggle); `userId` from the token
@@ -61,6 +61,7 @@ All five modules are implemented and wired into the main router (`src/routers/in
 - **Prisma singleton**: `src/core/prismaSingleton.ts` — import this everywhere, never instantiate `PrismaClient` directly.
 - **P2025 handling**: update/delete catch `P2025` (record not found) → `null` → 404. On create, a `P2025` from a nested `connect` to a missing related row is also caught → `null` → 404 (e.g. bad `communityId`/`postId`). The vote `set*` handlers pre-check the caller's Profile so a missing profile returns a clear 404 instead of masquerading as "target not found".
 - **Status codes**: 201 on create, 200 on read/update, 204 on delete, 400 on bad input, 401 on missing/invalid auth, 403 on non-owner mutation, 404 on not found, 409 on conflict, 500 on unexpected. All modules, including `posts`, return `204` on delete.
+- **Pagination (2026-08-04)**: the two list endpoints (`GET /posts`, `GET /posts/:postId/comments`) are cursor-paginated. Shared schema + `buildPage` helper in `src/core/pagination.ts`; a `validateQuery` middleware parses `?limit=`(default 20, max 100)/`?cursor=` and stashes them on `req.pagination` (Express 5 makes `req.query` read-only, so it's not overwritten like `req.body`). Repos take `limit + 1` with `orderBy: [{ createdAt: 'desc' }, { id: 'desc' }]` and `cursor`+`skip: 1`; responses are a `{ items, nextCursor }` envelope (was a bare array — a deliberate breaking change to those two reads).
 
 ## Data models (summary)
 

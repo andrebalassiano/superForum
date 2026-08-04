@@ -90,14 +90,14 @@ describe('posts: create when the author has no profile', () => {
 });
 
 describe('posts: reads', () => {
-    it('GET /api/posts returns a list', async () => {
+    it('GET /api/posts returns a paginated envelope', async () => {
         const { community } = await arrange();
         await makePost(TEST_USERS.alice.id, community.id);
 
         const res = await request(app).get('/api/posts');
         expect(res.status).toBe(200);
-        expect(Array.isArray(res.body)).toBe(true);
-        expect(res.body.length).toBe(1);
+        expect(res.body.items).toHaveLength(1);
+        expect(res.body.nextCursor).toBeNull();
     });
 
     it('GET /api/posts/:id returns the post', async () => {
@@ -116,6 +116,40 @@ describe('posts: reads', () => {
 
     it('GET /api/posts/:id returns 400 for a non-UUID id', async () => {
         const res = await request(app).get('/api/posts/not-a-uuid');
+        expect(res.status).toBe(400);
+    });
+});
+
+describe('posts: pagination', () => {
+    it('walks every post via the cursor with no dupes or gaps', async () => {
+        await makeProfile(TEST_USERS.alice, 'alice');
+        const community = await makeCommunity(TEST_USERS.alice.id);
+        const created: string[] = [];
+        for (let i = 0; i < 3; i++) {
+            created.push((await makePost(TEST_USERS.alice.id, community.id, { title: `p${i}` })).id);
+        }
+
+        const page1 = await request(app).get('/api/posts?limit=2');
+        expect(page1.status).toBe(200);
+        expect(page1.body.items).toHaveLength(2);
+        expect(page1.body.nextCursor).toBeTruthy();
+
+        const page2 = await request(app).get(`/api/posts?limit=2&cursor=${page1.body.nextCursor}`);
+        expect(page2.status).toBe(200);
+        expect(page2.body.items).toHaveLength(1);
+        expect(page2.body.nextCursor).toBeNull();
+
+        const seen = [...page1.body.items, ...page2.body.items].map((p: { id: string }) => p.id);
+        expect(new Set(seen)).toEqual(new Set(created));
+    });
+
+    it('returns 400 on an out-of-range limit', async () => {
+        const res = await request(app).get('/api/posts?limit=0');
+        expect(res.status).toBe(400);
+    });
+
+    it('returns 400 on a non-numeric limit', async () => {
+        const res = await request(app).get('/api/posts?limit=abc');
         expect(res.status).toBe(400);
     });
 });

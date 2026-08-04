@@ -29,6 +29,8 @@ Routes are grouped by resource. Reads are generally public; writes require a bea
 
 Every write route (and everything above marked as requiring auth) goes through the same JWT check, and every route with a body or an id in the URL is validated by Zod first.
 
+The two list endpoints — `GET /posts` and `GET /posts/:postId/comments` — are cursor-paginated. Pass `?limit=` (default 20, max 100) and `?cursor=` (the id of the last item you saw), and they return a `{ items, nextCursor }` envelope, where `nextCursor` is `null` once you've reached the end. Ordering is newest-first with the row id as a tiebreak, so paging stays stable even when two rows share a timestamp — and it leans on the `createdAt` index rather than counting past skipped rows the way `OFFSET` would.
+
 ## Try it in Postman
 
 The full request collection lives in [`postman/`](postman/superForum.postman_collection.json) — an end-to-end walkthrough (sign in → community → post → comment → vote → teardown), with the requests ordered as a resource lifecycle so it runs top to bottom in a single pass. Import that file into Postman, then create an environment with `baseUrl` set to `http://localhost:3000/api` plus your `supabaseUrl` and `supabaseKey`; the collection captures the auth token and the record ids automatically as it runs. It can also run headless with `newman`.
@@ -81,7 +83,7 @@ There's also an opt-in **real-token** lane (`npm run test:realtoken`) that skips
 
 ## Still to come
 
-The core is complete and covered by tests. The main thing I'd reach for next is pagination on the list endpoints — `GET /posts` and a post's comments currently return everything, which is fine at this size but is the obvious next step for anything resembling a real feed.
+The core is complete, tested, and now paginated. The natural next step is sorting the feed — a `?sort=new|top` on `GET /posts` that ranks by score instead of recency, which builds directly on the vote data already in place.
 
 ## Credits
 

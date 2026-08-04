@@ -9,6 +9,8 @@ declare global {
 
         interface Request {
             user?: AuthenticatedUser;
+            // Set by the validateQuery middleware on cursor-paginated list routes.
+            pagination?: { limit: number; cursor?: string };
         }
     }
 }

@@ -97,13 +97,36 @@ describe('comments: reads', () => {
 
         const res = await request(app).get(`/api/posts/${postId}/comments`);
         expect(res.status).toBe(200);
-        expect(res.body.length).toBe(2);
+        expect(res.body.items).toHaveLength(2);
+        expect(res.body.nextCursor).toBeNull();
     });
 
-    it('nested list returns an empty array (200) when the post has no comments', async () => {
+    it('nested list returns an empty page (200) when the post has no comments', async () => {
         const res = await request(app).get(`/api/posts/${postId}/comments`);
         expect(res.status).toBe(200);
-        expect(res.body).toEqual([]);
+        expect(res.body.items).toEqual([]);
+        expect(res.body.nextCursor).toBeNull();
+    });
+
+    it('paginates the thread via the cursor', async () => {
+        const created: string[] = [];
+        for (let i = 0; i < 3; i++) {
+            created.push((await makeComment(TEST_USERS.alice.id, postId, `c${i}`)).id);
+        }
+
+        const page1 = await request(app).get(`/api/posts/${postId}/comments?limit=2`);
+        expect(page1.status).toBe(200);
+        expect(page1.body.items).toHaveLength(2);
+        expect(page1.body.nextCursor).toBeTruthy();
+
+        const page2 = await request(app).get(
+            `/api/posts/${postId}/comments?limit=2&cursor=${page1.body.nextCursor}`,
+        );
+        expect(page2.body.items).toHaveLength(1);
+        expect(page2.body.nextCursor).toBeNull();
+
+        const seen = [...page1.body.items, ...page2.body.items].map((c: { id: string }) => c.id);
+        expect(new Set(seen)).toEqual(new Set(created));
     });
 });
 

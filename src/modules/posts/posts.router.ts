@@ -4,7 +4,9 @@ import requireAuth from '../../middleware/requireAuth';
 import optionalAuth from '../../middleware/optionalAuth';
 import validateBody from '../../middleware/validateBody';
 import validateParams from '../../middleware/validateParams';
+import validateQuery from '../../middleware/validateQuery';
 import { createPostSchema, updatePostSchema, idParamsSchema } from './posts.schemas';
+import { paginationQuerySchema } from '../../core/pagination';
 
 const postsRouter = express.Router();
 
@@ -14,7 +16,7 @@ const postsRouter = express.Router();
 // the (strict) createPostSchema so unknown/invalid fields are rejected with a 400 at the boundary.
 postsRouter
     .route('/')
-    .get(optionalAuth, postsController.getPosts)
+    .get(optionalAuth, validateQuery(paginationQuerySchema), postsController.getPosts)
     .post(requireAuth, validateBody(createPostSchema), postsController.createPost);
 
 // reads use optionalAuth for the same personalization reason; mutations require hard auth

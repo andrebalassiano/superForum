@@ -2,6 +2,7 @@ import commentsRepository from './comments.repository';
 import authRepository from '../auth/auth.repository';
 import { Prisma } from '../../generated/prisma/client';
 import { CreateCommentBodyDTO, UpdateCommentDTO } from './comments.schemas';
+import { buildPage, PaginationQueryDTO } from '../../core/pagination';
 
 
 // Returned by update/delete when the caller isn't the comment's author — controller maps it to 403.
@@ -64,15 +65,18 @@ const commentsService = {
         return { ...rest, currentUserVote: votes?.[0]?.value ?? null };
     },
 
-    // Same reshape, applied to every comment in the thread — single round-trip, all arrow states
-    // ready for the client to render on first paint.
-    async getCommentsByPostId(postId: string, userId?: string) {
-        const comments = await commentsRepository.findByPostId(postId, userId);
+    // Same reshape, applied to every comment in the page — single round-trip, all arrow states
+    // ready for the client to render on first paint. Returns the { items, nextCursor } envelope.
+    async getCommentsByPostId(postId: string, userId: string | undefined, pagination: PaginationQueryDTO) {
+        const rows = await commentsRepository.findByPostId(postId, userId, pagination);
+        const { items, nextCursor } = buildPage(rows, pagination.limit);
 
-        return comments.map((comment) => {
+        const comments = items.map((comment) => {
             const { votes, ...rest } = comment as typeof comment & { votes?: { value: number }[] };
             return { ...rest, currentUserVote: votes?.[0]?.value ?? null };
         });
+
+        return { items: comments, nextCursor };
     },
 
     // build the update payload from only the fields that were sent (PATCH semantics)

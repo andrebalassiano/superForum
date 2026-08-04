@@ -1,6 +1,7 @@
 import postsRepository from './posts.repository';
 import authRepository from '../auth/auth.repository';
 import { CreatePostDTO, UpdatePostDTO } from './posts.schemas';
+import { buildPage, PaginationQueryDTO } from '../../core/pagination';
 import { Prisma } from '../../generated/prisma/client';
 
 
@@ -19,13 +20,16 @@ const postsService = {
     // When provided, the repo includes the caller's vote on each post; we strip the raw `votes`
     // array and surface it as `currentUserVote: 1 | -1 | null` so the client never sees the
     // include shape and can render arrow state on first paint.
-    async getAllPosts(userId?: string) {
-        const posts = await postsRepository.findAll(userId);
+    async getAllPosts(userId: string | undefined, pagination: PaginationQueryDTO) {
+        const rows = await postsRepository.findAll(userId, pagination);
+        const { items, nextCursor } = buildPage(rows, pagination.limit);
 
-        return posts.map((post) => {
+        const posts = items.map((post) => {
             const { votes, ...rest } = post as typeof post & { votes?: { value: number }[] };
             return { ...rest, currentUserVote: votes?.[0]?.value ?? null };
         });
+
+        return { items: posts, nextCursor };
     },
 
 

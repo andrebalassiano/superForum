@@ -9,8 +9,10 @@ const postsController = {
 
         try {
             // req.user is undefined for anonymous callers (optionalAuth didn't reject) and populated
-            // when a valid token was present — pass through with optional chaining
-            const posts = await postsService.getAllPosts(req.user?.id);
+            // when a valid token was present — pass through with optional chaining. pagination is set
+            // by validateQuery; the fallback only guards against the route being wired without it.
+            const pagination = req.pagination ?? { limit: 20 };
+            const posts = await postsService.getAllPosts(req.user?.id, pagination);
 
             return res.status(200).json(posts);
 

@@ -70,7 +70,8 @@ const commentsController = {
         const { postId } = req.params;
 
         try {
-            const comments = await commentsService.getCommentsByPostId(postId, req.user?.id);
+            const pagination = req.pagination ?? { limit: 20 };
+            const comments = await commentsService.getCommentsByPostId(postId, req.user?.id, pagination);
 
             // empty list is a valid result (post simply has no comments yet) — don't 404
             return res.status(200).json(comments);

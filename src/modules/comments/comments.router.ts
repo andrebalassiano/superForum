@@ -4,12 +4,14 @@ import requireAuth from '../../middleware/requireAuth';
 import optionalAuth from '../../middleware/optionalAuth';
 import validateBody from '../../middleware/validateBody';
 import validateParams from '../../middleware/validateParams';
+import validateQuery from '../../middleware/validateQuery';
 import {
     createCommentBodySchema,
     updateCommentSchema,
     idParamsSchema,
     postIdParamsSchema,
 } from './comments.schemas';
+import { paginationQuerySchema } from '../../core/pagination';
 
 
 // Single-comment routes (read / update / delete), mounted at /comments in the main router.
@@ -40,7 +42,12 @@ const postCommentsRouter = express.Router({ mergeParams: true });
 // :postId is validated as a UUID for both verbs.
 postCommentsRouter
     .route('/')
-    .get(optionalAuth, validateParams(postIdParamsSchema), commentsController.getCommentsByPostId)
+    .get(
+        optionalAuth,
+        validateParams(postIdParamsSchema),
+        validateQuery(paginationQuerySchema),
+        commentsController.getCommentsByPostId,
+    )
     .post(
         requireAuth,
         validateParams(postIdParamsSchema),
