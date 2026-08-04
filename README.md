@@ -77,6 +77,8 @@ npm test                                          # or: npm run test:coverage
 
 The same suite runs on every push and pull request through GitHub Actions — that's what the CI and coverage badges at the top report.
 
+There's also an opt-in **real-token** lane (`npm run test:realtoken`) that skips the mock entirely: it signs a real user into Supabase, gets a genuine JWT, and drives it through the auth middleware for real. It's gated on credentials — without a `.env.test.realtoken` it simply skips, so the default run and CI never need secrets.
+
 ## Still to come
 
 The core is complete and covered by tests. The main thing I'd reach for next is pagination on the list endpoints — `GET /posts` and a post's comments currently return everything, which is fine at this size but is the obvious next step for anything resembling a real feed.

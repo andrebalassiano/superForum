@@ -8,6 +8,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
+    "test:realtoken": "vitest run --config vitest.realtoken.config.ts",
     "build": "tsc",
     "typecheck": "tsc --noEmit",
     "dev": "tsx src/server.ts",
