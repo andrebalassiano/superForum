@@ -6,11 +6,10 @@ import z from 'zod';
 // .strict() rejects unknown keys with a 400 (including a stray postId) instead of ignoring them.
 export const createCommentBodySchema = z.object({
     content: z.string().trim().min(1),
-    timestamp: z.iso.datetime(),
 }).strict();
 
-// body for PATCH /comments/:id — only `content` is editable; postId/authorId/timestamp are immutable
-// (you don't reassign a comment to a different post or backdate it).
+// body for PATCH /comments/:id — only `content` is editable; postId/authorId are immutable
+// (you don't reassign a comment to a different post).
 export const updateCommentSchema = z.object({
     content: z.string().trim().min(1).optional(),
 }).strict();

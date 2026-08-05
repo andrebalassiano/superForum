@@ -46,7 +46,6 @@ const postsService = {
         const data: Prisma.PostCreateInput = {
             title: dto.title,
             content: dto.content,
-            timestamp: dto.timestamp,
             author: {
                 connect: {
                     id: authorId,

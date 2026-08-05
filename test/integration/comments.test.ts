@@ -16,7 +16,7 @@ beforeEach(async () => {
 });
 
 function validCommentBody() {
-    return { content: 'A comment', timestamp: new Date().toISOString() };
+    return { content: 'A comment' };
 }
 
 describe('comments: POST /api/posts/:postId/comments', () => {
@@ -74,7 +74,7 @@ describe('comments: POST /api/posts/:postId/comments', () => {
             .send(validCommentBody());
 
         expect(res.status).toBe(404);
-        expect(res.body.message).toMatch(/profile/i);
+        expect(res.body.error.message).toMatch(/profile/i);
     });
 });
 

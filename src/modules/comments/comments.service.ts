@@ -29,7 +29,6 @@ const commentsService = {
 
         const data: Prisma.CommentCreateInput = {
             content: dto.content,
-            timestamp: dto.timestamp,
             author: {
                 connect: {
                     id: authorId,

@@ -18,7 +18,6 @@ function validPostBody(communityId: string) {
     return {
         title: 'A title',
         content: 'Some content',
-        timestamp: new Date().toISOString(),
         communityId,
     };
 }
@@ -44,13 +43,16 @@ describe('posts: POST /api/posts', () => {
         expect(res.status).toBe(401);
     });
 
-    it('returns 400 on an unknown key (.strict)', async () => {
+    it('returns 400 on an unknown key (.strict), wrapped in the error envelope', async () => {
         const res = await request(app)
             .post('/api/posts')
             .set('Authorization', authHeader(TEST_USERS.alice))
             .send({ ...validPostBody(communityId), sneaky: true });
 
         expect(res.status).toBe(400);
+        // consistent envelope: { error: { message, details } } — details carries the Zod issues
+        expect(res.body.error.message).toBeDefined();
+        expect(Array.isArray(res.body.error.details)).toBe(true);
     });
 
     it('returns 400 on an empty title', async () => {
@@ -85,7 +87,7 @@ describe('posts: create when the author has no profile', () => {
             .send(validPostBody(community.id));
 
         expect(res.status).toBe(404);
-        expect(res.body.message).toMatch(/profile/i);
+        expect(res.body.error.message).toMatch(/profile/i);
     });
 });
 

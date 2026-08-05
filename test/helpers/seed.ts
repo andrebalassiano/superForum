@@ -33,7 +33,6 @@ export function makePost(authorId: string, communityId: string, overrides?: { ti
         data: {
             title: overrides?.title ?? 'Seed title',
             content: overrides?.content ?? 'Seed content',
-            timestamp: new Date(),
             author: { connect: { id: authorId } },
             community: { connect: { id: communityId } },
         },
@@ -44,7 +43,6 @@ export function makeComment(authorId: string, postId: string, content = 'Seed co
     return prisma.comment.create({
         data: {
             content,
-            timestamp: new Date(),
             author: { connect: { id: authorId } },
             post: { connect: { id: postId } },
         },

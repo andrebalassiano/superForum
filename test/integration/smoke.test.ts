@@ -19,7 +19,6 @@ describe('smoke: POST /api/posts', () => {
             .send({
                 title: 'Hello world',
                 content: 'First post from the test harness',
-                timestamp: new Date().toISOString(),
                 communityId: community.id,
             });
 
@@ -35,7 +34,6 @@ describe('smoke: POST /api/posts', () => {
             .send({
                 title: 'No token',
                 content: 'should be rejected',
-                timestamp: new Date().toISOString(),
                 communityId: '33333333-3333-3333-3333-333333333333',
             });
 
