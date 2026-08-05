@@ -29,7 +29,7 @@ Routes are grouped by resource. Reads are generally public; writes require a bea
 
 Every write route (and everything above marked as requiring auth) goes through the same JWT check, and every route with a body or an id in the URL is validated by Zod first.
 
-The list endpoints — `GET /posts`, `GET /posts/:postId/comments`, and `GET /communities` — are cursor-paginated. Pass `?limit=` (default 20, max 100) and `?cursor=` (the id of the last item you saw), and they return a `{ items, nextCursor }` envelope, where `nextCursor` is `null` once you've reached the end. Ordering is newest-first with the row id as a tiebreak, so paging stays stable even when two rows share a creation time — and it leans on the `createdAt` index rather than counting past skipped rows the way `OFFSET` would.
+The list endpoints — `GET /posts`, `GET /posts/:postId/comments`, and `GET /communities` — are cursor-paginated. Pass `?limit=` (default 20, max 100) and `?cursor=` (the id of the last item you saw), and they return a `{ items, nextCursor }` envelope, where `nextCursor` is `null` once you've reached the end. Ordering is newest-first with the row id as a tiebreak, so paging stays stable even when two rows share a creation time — and it leans on the `createdAt` index rather than counting past skipped rows the way `OFFSET` would. `GET /posts` additionally takes `?sort=new|top`: `new` (the default) is that newest-first order, while `top` ranks by the vote score (index-backed, so it stays cheap at any depth).
 
 ## Try it in Postman
 
@@ -85,7 +85,7 @@ There's also an opt-in **real-token** lane (`npm run test:realtoken`) that skips
 
 ## Still to come
 
-The core is complete, tested, and now paginated. The natural next step is sorting the feed — a `?sort=new|top` on `GET /posts` that ranks by score instead of recency, which builds directly on the vote data already in place.
+The core is complete, tested, paginated, and sortable. The main things I'd add before a client consumes this are rate limiting on the write routes and a small front end to actually browse it.
 
 ## Credits
 

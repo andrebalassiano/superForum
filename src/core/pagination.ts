@@ -3,10 +3,14 @@ import z from 'zod';
 // Query params for cursor-paginated list endpoints. `limit` defaults to 20 and caps at 100;
 // `cursor` is the id of the last item from the previous page. z.coerce turns the raw string query
 // values into numbers, and .strict() rejects unknown/typo'd query keys with a 400.
-export const paginationQuerySchema = z.object({
+// The raw fields, exported so endpoints that need extra query params (e.g. posts' `sort`) can
+// spread them into their own schema instead of duplicating limit/cursor.
+export const paginationFields = {
     limit: z.coerce.number().int().min(1).max(100).default(20),
     cursor: z.uuid().optional(),
-}).strict();
+};
+
+export const paginationQuerySchema = z.object(paginationFields).strict();
 
 export type PaginationQueryDTO = z.infer<typeof paginationQuerySchema>;
 

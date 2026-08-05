@@ -20,7 +20,7 @@ const postsService = {
     // When provided, the repo includes the caller's vote on each post; we strip the raw `votes`
     // array and surface it as `currentUserVote: 1 | -1 | null` so the client never sees the
     // include shape and can render arrow state on first paint.
-    async getAllPosts(userId: string | undefined, pagination: PaginationQueryDTO) {
+    async getAllPosts(userId: string | undefined, pagination: PaginationQueryDTO & { sort?: 'new' | 'top' }) {
         const rows = await postsRepository.findAll(userId, pagination);
         const { items, nextCursor } = buildPage(rows, pagination.limit);
 

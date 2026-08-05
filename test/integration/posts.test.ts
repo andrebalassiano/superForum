@@ -4,6 +4,7 @@ import request from 'supertest';
 import app from '../../src/app';
 import { TEST_USERS, authHeader } from '../helpers/auth';
 import { makeProfile, makeCommunity, makePost } from '../helpers/seed';
+import prisma from '../../src/core/prismaSingleton';
 
 // Alice authors content; Bob is a second real user used for the ownership (403) paths.
 // Both need a Profile row, and Alice needs a Community to post into.
@@ -152,6 +153,27 @@ describe('posts: pagination', () => {
 
     it('returns 400 on a non-numeric limit', async () => {
         const res = await request(app).get('/api/posts?limit=abc');
+        expect(res.status).toBe(400);
+    });
+});
+
+describe('posts: sort', () => {
+    it('?sort=top orders posts by score descending', async () => {
+        await makeProfile(TEST_USERS.alice, 'alice');
+        const community = await makeCommunity(TEST_USERS.alice.id);
+        const low = await makePost(TEST_USERS.alice.id, community.id, { title: 'low' });
+        const high = await makePost(TEST_USERS.alice.id, community.id, { title: 'high' });
+        const mid = await makePost(TEST_USERS.alice.id, community.id, { title: 'mid' });
+        await prisma.post.update({ where: { id: high.id }, data: { score: 10 } });
+        await prisma.post.update({ where: { id: mid.id }, data: { score: 5 } });
+
+        const res = await request(app).get('/api/posts?sort=top&limit=10');
+        expect(res.status).toBe(200);
+        expect(res.body.items.map((p: { id: string }) => p.id)).toEqual([high.id, mid.id, low.id]);
+    });
+
+    it('returns 400 on an invalid sort value', async () => {
+        const res = await request(app).get('/api/posts?sort=banana');
         expect(res.status).toBe(400);
     });
 });

@@ -15,7 +15,7 @@ function validateQuery(schema: z.ZodType) {
             });
         }
 
-        req.pagination = result.data as { limit: number; cursor?: string };
+        req.pagination = result.data as { limit: number; cursor?: string; sort?: 'new' | 'top' };
 
         return next();
     };

@@ -47,6 +47,7 @@ model Post {
   @@index([authorId])
   @@index([communityId])
   @@index([createdAt])
+  @@index([score])
 }
 
 
