@@ -25,7 +25,7 @@ Routes are grouped by resource. Reads are generally public; writes require a bea
 
 **Comments.** A comment belongs to a post, so it's created under one: `POST /posts/:postId/comments`, with the post id in the URL rather than the body. `GET /posts/:postId/comments` lists a post's comments. A single comment is read at `GET /comments/:id` (public, vote-enriched if authenticated), and `PATCH`/`DELETE /comments/:id` edit and remove it.
 
-**Votes.** Voting is idempotent. `PUT /posts/:postId/vote` sets your vote to either `1` or `-1` — it's an upsert underneath, so calling it again just overwrites your previous vote — and `DELETE /posts/:postId/vote` takes it back. Comments work identically at `/comments/:commentId/vote`. There's deliberately no "zero" vote: removing a vote is a `DELETE`, which keeps the votes table free of meaningless zero rows.
+**Votes.** Voting is idempotent. `PUT /posts/:postId/vote` sets your vote to either `1` or `-1` — it's an upsert underneath, so calling it again just overwrites your previous vote — and `DELETE /posts/:postId/vote` takes it back. Comments work identically at `/comments/:commentId/vote`. There's deliberately no "zero" vote: removing a vote is a `DELETE`, which keeps the votes table free of meaningless zero rows. Every post and comment also carries an aggregate `score` (the sum of its votes) that reads return directly.
 
 Every write route (and everything above marked as requiring auth) goes through the same JWT check, and every route with a body or an id in the URL is validated by Zod first.
 
@@ -46,6 +46,8 @@ There are **two auth middlewares** rather than one. `requireAuth` is the strict 
 **Validation happens at the edge.** The Zod schemas run as middleware before any handler code, so a controller never has to defend against a malformed body — by the time it runs, the input is already the right shape. The same schemas also generate the TypeScript types via `z.infer`, so there's a single source of truth for both the runtime check and the compile-time type.
 
 A couple of smaller things: there's **one shared Prisma client** (in `src/core/prismaSingleton.ts`) using the direct-connection `PrismaPg` adapter, rather than new clients scattered around. And **"not found" is handled deliberately** — the repository catches Prisma's `P2025` error and returns `null` instead of letting it throw, and the controller turns that `null` into a 404. Database errors get translated into HTTP responses rather than leaking out raw. And every error response, wherever it originates, is normalized to one shape — `{ error: { message, details? } }` — by a single middleware, so the error contract lives in exactly one place instead of being repeated at every handler.
+
+The vote **score** on a post or comment is **denormalized** — stored as a column and adjusted inside the same transaction as the vote itself (a fresh upvote adds one, switching upvote to downvote subtracts two), rather than summed over the votes table on every read. That keeps a read a single-row fetch no matter how many thousands of votes a post has, and it's what lets the feed be ordered by score.
 
 ## The data model
 

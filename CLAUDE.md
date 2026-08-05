@@ -65,6 +65,7 @@ All five modules are implemented and wired into the main router (`src/routers/in
 - **Error envelope (2026-08-04)**: every 4xx/5xx response is normalized to `{ error: { message, details? } }` by one `errorEnvelope` middleware (wraps `res.json`; controllers still send plain `{ message }`). `details` carries the Zod issues on validation failures. Single source of truth — change the shape in one file.
 - **CORS (2026-08-04)**: `cors` middleware in `app.ts`, allowlist from `CORS_ORIGIN` (comma-separated, defaults to `http://localhost:5173`). Non-browser clients (Postman, tests) unaffected.
 - **Timestamps (2026-08-04)**: the client-supplied `timestamp` column was DROPPED from Post and Comment (migration `20260804010000_drop_post_comment_timestamp`); `createdAt` (`@default(now())`) is the sole creation time. Create bodies no longer accept `timestamp`.
+- **Vote score (2026-08-04, #8)**: Post and Comment carry a denormalized `score Int @default(0)` (migration `20260804020000_add_vote_score`, backfilled from existing votes). Maintained by the vote repos' `upsertWithScore`/`deleteWithScore`, which wrap the vote write + a `score { increment/decrement }` in one `prisma.$transaction` using the `(newValue - oldValue)` delta. Reads return `score` automatically (it's a scalar the reshape passes through). This is the foundation for #7 sort-by-top (`orderBy: { score }`).
 
 ## Data models (summary)
 

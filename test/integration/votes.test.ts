@@ -77,6 +77,31 @@ describe('votes: post votes', () => {
         expect(read.body.currentUserVote).toBeNull();
     });
 
+    it('maintains the post score as the vote is set, switched, and removed', async () => {
+        // fresh upvote → +1
+        await request(app)
+            .put(`/api/posts/${postId}/vote`)
+            .set('Authorization', authHeader(TEST_USERS.alice))
+            .send({ value: 1 });
+        let read = await request(app).get(`/api/posts/${postId}`);
+        expect(read.body.score).toBe(1);
+
+        // switch to downvote → -1 (delta of -2)
+        await request(app)
+            .put(`/api/posts/${postId}/vote`)
+            .set('Authorization', authHeader(TEST_USERS.alice))
+            .send({ value: -1 });
+        read = await request(app).get(`/api/posts/${postId}`);
+        expect(read.body.score).toBe(-1);
+
+        // remove → back to 0
+        await request(app)
+            .delete(`/api/posts/${postId}/vote`)
+            .set('Authorization', authHeader(TEST_USERS.alice));
+        read = await request(app).get(`/api/posts/${postId}`);
+        expect(read.body.score).toBe(0);
+    });
+
     it('DELETE returns 404 when no vote exists', async () => {
         const res = await request(app)
             .delete(`/api/posts/${postId}/vote`)
@@ -132,6 +157,21 @@ describe('votes: comment votes', () => {
             .delete(`/api/comments/${commentId}/vote`)
             .set('Authorization', authHeader(TEST_USERS.alice));
         expect(del.status).toBe(204);
+    });
+
+    it('maintains the comment score as the vote is set and removed', async () => {
+        await request(app)
+            .put(`/api/comments/${commentId}/vote`)
+            .set('Authorization', authHeader(TEST_USERS.alice))
+            .send({ value: 1 });
+        let read = await request(app).get(`/api/comments/${commentId}`);
+        expect(read.body.score).toBe(1);
+
+        await request(app)
+            .delete(`/api/comments/${commentId}/vote`)
+            .set('Authorization', authHeader(TEST_USERS.alice));
+        read = await request(app).get(`/api/comments/${commentId}`);
+        expect(read.body.score).toBe(0);
     });
 
     it('returns 404 when the comment does not exist', async () => {
