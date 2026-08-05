@@ -116,7 +116,7 @@ describe('votes: post votes', () => {
             .send({ value: 1 });
 
         expect(res.status).toBe(404);
-        expect(res.body.message).toMatch(/profile/i);
+        expect(res.body.error.message).toMatch(/profile/i);
     });
 });
 

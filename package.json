@@ -4,6 +4,9 @@
   "description": "A Reddit-style forum REST API built with TypeScript, Express 5, Prisma 7, and Supabase auth.",
   "private": true,
   "main": "dist/server.js",
+  "engines": {
+    "node": ">=20.0.0"
+  },
   "scripts": {
     "test": "vitest run",
     "test:watch": "vitest",
@@ -37,6 +40,7 @@
   },
   "homepage": "https://github.com/andrebalassiano/superForum#readme",
   "devDependencies": {
+    "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
     "@types/node": "^25.4.0",
     "@types/pg": "^8.20.0",
@@ -53,6 +57,7 @@
     "@prisma/adapter-pg": "^7.8.0",
     "@prisma/client": "^7.4.2",
     "@supabase/supabase-js": "^2.106.1",
+    "cors": "^2.8.6",
     "dotenv": "^17.3.1",
     "express": "^5.2.1",
     "pg": "^8.21.0"

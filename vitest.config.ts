@@ -53,7 +53,11 @@ export default defineConfig({
         // load-env MUST come first: it points DATABASE_URL at the test DB before any
         // helper (and therefore the Prisma singleton) is imported. each-setup then
         // registers the Supabase mock and the truncate-between-tests hook.
-        setupFiles: ['./test/setup/load-env.ts', './test/setup/each-setup.ts'],
+        setupFiles: [
+            './test/setup/load-env.ts',
+            './test/setup/silence-pg-warning.ts',
+            './test/setup/each-setup.ts',
+        ],
 
         // Runs once before the whole suite: migrate deploy against the test DB.
         globalSetup: ['./test/setup/global-setup.ts'],
