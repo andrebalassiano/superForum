@@ -58,6 +58,34 @@ describe('communities: POST /api/communities', () => {
 });
 
 describe('communities: reads', () => {
+    it('GET /api/communities returns a paginated envelope', async () => {
+        await makeCommunity(TEST_USERS.alice.id);
+        await makeCommunity(TEST_USERS.alice.id);
+
+        const res = await request(app).get('/api/communities');
+        expect(res.status).toBe(200);
+        expect(res.body.items).toHaveLength(2);
+        expect(res.body.nextCursor).toBeNull();
+    });
+
+    it('paginates communities via the cursor', async () => {
+        const created: string[] = [];
+        for (let i = 0; i < 3; i++) {
+            created.push((await makeCommunity(TEST_USERS.alice.id)).id);
+        }
+
+        const page1 = await request(app).get('/api/communities?limit=2');
+        expect(page1.body.items).toHaveLength(2);
+        expect(page1.body.nextCursor).toBeTruthy();
+
+        const page2 = await request(app).get(`/api/communities?limit=2&cursor=${page1.body.nextCursor}`);
+        expect(page2.body.items).toHaveLength(1);
+        expect(page2.body.nextCursor).toBeNull();
+
+        const seen = [...page1.body.items, ...page2.body.items].map((c: { id: string }) => c.id);
+        expect(new Set(seen)).toEqual(new Set(created));
+    });
+
     it('GET /api/communities/:id returns the community', async () => {
         const community = await makeCommunity(TEST_USERS.alice.id);
         const res = await request(app).get(`/api/communities/${community.id}`);

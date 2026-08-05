@@ -27,6 +27,19 @@ const communitiesController = {
         }
     },
 
+    async getCommunities(req: Request, res: Response) {
+        try {
+            const pagination = req.pagination ?? { limit: 20 };
+            const communities = await communitiesService.getAllCommunities(pagination);
+
+            return res.status(200).json(communities);
+
+        } catch (error) {
+            console.error(error);
+            return res.status(500).json({ message: 'Failed to fetch communities' });
+        }
+    },
+
     async getCommunityById(req: Request<IdParamsDTO>, res: Response) {
         const { id } = req.params;
 

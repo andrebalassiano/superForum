@@ -1,6 +1,7 @@
 import communitiesRepository from './communities.repository';
 import { Prisma } from '../../generated/prisma/client';
 import { CreateCommunityDTO, UpdateCommunityDTO } from './communities.schemas';
+import { buildPage, PaginationQueryDTO } from '../../core/pagination';
 
 
 // Returned by update/delete when the caller isn't the community's owner — controller maps it to 403.
@@ -32,6 +33,12 @@ const communitiesService = {
     // simple read passthrough — kept here so the controller never talks to the repository directly
     async getCommunityById(id: string) {
         return await communitiesRepository.findById({ id });
+    },
+
+    // cursor-paginated list → { items, nextCursor } (no per-row reshape; communities have no votes)
+    async getAllCommunities(pagination: PaginationQueryDTO) {
+        const rows = await communitiesRepository.findAll(pagination);
+        return buildPage(rows, pagination.limit);
     },
 
     // build the update payload from only the fields that were sent (PATCH semantics)

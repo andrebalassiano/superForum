@@ -19,7 +19,7 @@ Routes are grouped by resource. Reads are generally public; writes require a bea
 
 **Auth and profiles.** `POST /auth/profile` creates the signed-in user's profile row, `GET /auth/me` returns it, and `GET /auth/profiles/:id` looks up any profile by id (public).
 
-**Communities.** `POST /communities` creates one; `GET /communities/:id` reads it (public); `PATCH` and `DELETE` on the same path update and remove it.
+**Communities.** `GET /communities` lists them and `GET /communities/:id` reads one (both public); `POST /communities` creates one; `PATCH` and `DELETE /communities/:id` update and remove it.
 
 **Posts.** `GET /posts` lists them and `GET /posts/:id` reads one — both public, both enriched with your current vote if you're authenticated. `POST /posts` creates a post, and `PATCH`/`DELETE /posts/:id` edit and remove it.
 
@@ -29,7 +29,7 @@ Routes are grouped by resource. Reads are generally public; writes require a bea
 
 Every write route (and everything above marked as requiring auth) goes through the same JWT check, and every route with a body or an id in the URL is validated by Zod first.
 
-The two list endpoints — `GET /posts` and `GET /posts/:postId/comments` — are cursor-paginated. Pass `?limit=` (default 20, max 100) and `?cursor=` (the id of the last item you saw), and they return a `{ items, nextCursor }` envelope, where `nextCursor` is `null` once you've reached the end. Ordering is newest-first with the row id as a tiebreak, so paging stays stable even when two rows share a timestamp — and it leans on the `createdAt` index rather than counting past skipped rows the way `OFFSET` would.
+The list endpoints — `GET /posts`, `GET /posts/:postId/comments`, and `GET /communities` — are cursor-paginated. Pass `?limit=` (default 20, max 100) and `?cursor=` (the id of the last item you saw), and they return a `{ items, nextCursor }` envelope, where `nextCursor` is `null` once you've reached the end. Ordering is newest-first with the row id as a tiebreak, so paging stays stable even when two rows share a creation time — and it leans on the `createdAt` index rather than counting past skipped rows the way `OFFSET` would.
 
 ## Try it in Postman
 
@@ -45,7 +45,7 @@ There are **two auth middlewares** rather than one. `requireAuth` is the strict 
 
 **Validation happens at the edge.** The Zod schemas run as middleware before any handler code, so a controller never has to defend against a malformed body — by the time it runs, the input is already the right shape. The same schemas also generate the TypeScript types via `z.infer`, so there's a single source of truth for both the runtime check and the compile-time type.
 
-A couple of smaller things: there's **one shared Prisma client** (in `src/core/prismaSingleton.ts`) using the direct-connection `PrismaPg` adapter, rather than new clients scattered around. And **"not found" is handled deliberately** — the repository catches Prisma's `P2025` error and returns `null` instead of letting it throw, and the controller turns that `null` into a 404. Database errors get translated into HTTP responses rather than leaking out raw.
+A couple of smaller things: there's **one shared Prisma client** (in `src/core/prismaSingleton.ts`) using the direct-connection `PrismaPg` adapter, rather than new clients scattered around. And **"not found" is handled deliberately** — the repository catches Prisma's `P2025` error and returns `null` instead of letting it throw, and the controller turns that `null` into a 404. Database errors get translated into HTTP responses rather than leaking out raw. And every error response, wherever it originates, is normalized to one shape — `{ error: { message, details? } }` — by a single middleware, so the error contract lives in exactly one place instead of being repeated at every handler.
 
 ## The data model
 
@@ -53,7 +53,7 @@ A **Profile** is keyed by the user's Supabase auth UUID rather than a generated 
 
 ## Running it locally
 
-You'll need Node 18 or newer and a Supabase project for the Postgres database and auth.
+You'll need Node 20 or newer and a Supabase project for the Postgres database and auth.
 
 ```bash
 npm install

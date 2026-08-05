@@ -305,6 +305,42 @@
           "response": []
         },
         {
+          "name": "API: Get Communities",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"status is 200\", () => pm.response.to.have.status(200));"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/communities?limit=10",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "communities"
+              ],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
           "name": "API: Get Community by ID",
           "event": [
             {
@@ -412,7 +448,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\r\n  \"title\": \"third post\",\r\n  \"content\": \"heya world\",\r\n  \"timestamp\": \"2026-06-17T00:00:00.000Z\",\r\n  \"communityId\": \"{{communityId}}\"\r\n}",
+              "raw": "{\r\n  \"title\": \"third post\",\r\n  \"content\": \"heya world\",\r\n  \"communityId\": \"{{communityId}}\"\r\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -450,12 +486,18 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/posts",
+              "raw": "{{baseUrl}}/posts?limit=10",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "posts"
+              ],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
               ]
             }
           },
@@ -562,7 +604,7 @@
             "header": [],
             "body": {
               "mode": "raw",
-              "raw": "{\r\n  \"content\": \"great post!\",\r\n  \"timestamp\": \"{{$isoTimestamp}}\"\r\n}",
+              "raw": "{\r\n  \"content\": \"great post!\"\r\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -598,9 +640,6 @@
               }
             }
           ],
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
           "request": {
             "method": "GET",
             "header": [
@@ -610,12 +649,8 @@
                 "type": "text"
               }
             ],
-            "body": {
-              "mode": "raw",
-              "raw": ""
-            },
             "url": {
-              "raw": "{{baseUrl}}/posts/{{postId}}/comments",
+              "raw": "{{baseUrl}}/posts/{{postId}}/comments?limit=10",
               "host": [
                 "{{baseUrl}}"
               ],
@@ -623,6 +658,12 @@
                 "posts",
                 "{{postId}}",
                 "comments"
+              ],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
               ]
             }
           },
