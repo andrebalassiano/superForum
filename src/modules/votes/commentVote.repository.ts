@@ -1,39 +1,6 @@
 import prisma from '../../core/prismaSingleton';
-import { Prisma } from '../../generated/prisma/client';
 
 const commentVoteRepository = {
-
-    async create(data:Prisma.CommentVoteCreateInput) {
-        return prisma.commentVote.create({
-            data,
-        });
-    },
-
-
-    async findById(where:Prisma.CommentVoteWhereUniqueInput) {
-        return prisma.commentVote.findUnique({
-            where,
-        });
-    },
-
-
-    async findByComment(commentId:string) {
-        return prisma.commentVote.findMany({
-            where: {
-                commentId: commentId,
-            }
-        });
-    },
-
-
-    async updateById(where:Prisma.CommentVoteWhereUniqueInput,
-                     data:Prisma.CommentVoteUpdateInput) {
-        return prisma.commentVote.update({
-            where,
-            data,
-        });
-    },
-
 
     // Mirror of postVoteRepository.upsertWithScore — upsert the vote and keep the comment's
     // denormalized `score` in sync atomically, using the (newValue - oldValue) delta.

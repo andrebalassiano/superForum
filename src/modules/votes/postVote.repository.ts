@@ -1,39 +1,6 @@
 import prisma from '../../core/prismaSingleton';
-import { Prisma } from '../../generated/prisma/client';
 
 const postVoteRepository = {
-
-    async create(data:Prisma.PostVoteCreateInput) {
-        return prisma.postVote.create({
-            data,
-        });
-    },
-
-
-    async findById(where:Prisma.PostVoteWhereUniqueInput) {
-        return prisma.postVote.findUnique({
-            where,
-        });
-    },
-
-
-    async findByPost(postId:string) {
-        return prisma.postVote.findMany({
-            where: {
-                postId: postId,
-            }
-        });
-    },
-
-
-    async updateById(where:Prisma.PostVoteWhereUniqueInput,
-                     data:Prisma.PostVoteUpdateInput) {
-        return prisma.postVote.update({
-            where,
-            data,
-        });
-    },
-
 
     // Upsert the caller's vote AND keep the post's denormalized `score` in sync, atomically.
     // We read the old value first so the score delta is (newValue - oldValue): a fresh +1 adds 1,
