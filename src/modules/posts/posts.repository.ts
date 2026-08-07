@@ -8,7 +8,13 @@ const postsRepository = {
     // Cursor pagination with a feed sort. `top` orders by score, `new` (default) by recency; either
     // way the id tiebreak keeps the ordering total, and take limit+1 lets the service detect a next
     // page. When a cursor is given, seek to it and skip it (skip: 1) so paging never repeats it.
-    async findAll(userId: string | undefined, pagination: PaginationQueryDTO & { sort?: 'new' | 'top' }) {
+    // An optional communityId scopes the feed to a single community (GET /communities/:id/posts);
+    // omitted, it's the global feed (GET /posts).
+    async findAll(
+        userId: string | undefined,
+        pagination: PaginationQueryDTO & { sort?: 'new' | 'top' },
+        communityId?: string,
+    ) {
         const { limit, cursor, sort } = pagination;
         const orderBy = sort === 'top'
             ? [{ score: 'desc' as const }, { id: 'desc' as const }]
@@ -17,6 +23,7 @@ const postsRepository = {
         return prisma.post.findMany({
             take: limit + 1,
             ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
+            ...(communityId ? { where: { communityId } } : {}),
             include: {
                 author: true,
                 community: true,
@@ -63,27 +70,7 @@ const postsRepository = {
         });
     },
 
-    async findByCommunityId(communityId: string) {
-        return prisma.post.findMany({
-            where: {
-                communityId,
-            },
-            include: {
-                author: true,
-                community: true,
-                _count: {
-                    select: {
-                        comments: true,
-                    },
-                },
-            },
-            orderBy: {
-                createdAt: 'desc',
-            },
-        });
-    },
-
-    async updateById(where: Prisma.PostWhereUniqueInput, 
+    async updateById(where: Prisma.PostWhereUniqueInput,
                     data: Prisma.PostUpdateInput) {
         return prisma.post.update({
             where,

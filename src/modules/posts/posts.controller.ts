@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import postsService, { FORBIDDEN, PROFILE_NOT_FOUND } from './posts.service';
-import { CreatePostDTO, IdParamsDTO } from './posts.schemas';
+import { CreatePostDTO, IdParamsDTO, UpdatePostDTO } from './posts.schemas';
 
 
 const postsController = {
@@ -20,6 +20,27 @@ const postsController = {
             console.error(error);
 
             return res.status(500).json({ message: 'Failed to fetch posts'});
+        }
+    },
+
+    // GET /communities/:id/posts — the global feed scoped to one community. Same pipeline as
+    // getPosts (optionalAuth → currentUserVote, cursor pagination, sort), just filtered by the
+    // community id from the URL. An unknown/empty community yields an empty page, not a 404 —
+    // consistent with the nested comments list.
+    async getPostsByCommunity(req: Request<IdParamsDTO>, res: Response) {
+
+        const { id } = req.params;
+
+        try {
+            const pagination = req.pagination ?? { limit: 20 };
+            const posts = await postsService.getAllPosts(req.user?.id, pagination, id);
+
+            return res.status(200).json(posts);
+
+        } catch (error) {
+            console.error(error);
+
+            return res.status(500).json({ message: 'Failed to fetch posts' });
         }
     },
 
@@ -75,7 +96,7 @@ const postsController = {
         }
     },
 
-    async updatePost(req: Request<IdParamsDTO>, res: Response) {
+    async updatePost(req: Request<IdParamsDTO, object, UpdatePostDTO>, res: Response) {
 
         // defensive check — requireAuth should guarantee req.user, but TS doesn't know that
         if (!req.user) {

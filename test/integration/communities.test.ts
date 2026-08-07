@@ -104,6 +104,81 @@ describe('communities: reads', () => {
     });
 });
 
+describe('communities: GET /api/communities/:id/posts', () => {
+    it('returns a paginated envelope of the community\'s posts', async () => {
+        const community = await makeCommunity(TEST_USERS.alice.id);
+        await makePost(TEST_USERS.alice.id, community.id);
+
+        const res = await request(app).get(`/api/communities/${community.id}/posts`);
+        expect(res.status).toBe(200);
+        expect(res.body.items).toHaveLength(1);
+        expect(res.body.nextCursor).toBeNull();
+    });
+
+    it('scopes the feed to the community — other communities\' posts are excluded', async () => {
+        const a = await makeCommunity(TEST_USERS.alice.id);
+        const b = await makeCommunity(TEST_USERS.alice.id);
+        const mine = await makePost(TEST_USERS.alice.id, a.id, { title: 'in A' });
+        await makePost(TEST_USERS.alice.id, b.id, { title: 'in B' });
+
+        const res = await request(app).get(`/api/communities/${a.id}/posts`);
+        expect(res.status).toBe(200);
+        expect(res.body.items.map((p: { id: string }) => p.id)).toEqual([mine.id]);
+    });
+
+    it('returns an empty page for a community with no posts (not a 404)', async () => {
+        const community = await makeCommunity(TEST_USERS.alice.id);
+
+        const res = await request(app).get(`/api/communities/${community.id}/posts`);
+        expect(res.status).toBe(200);
+        expect(res.body.items).toEqual([]);
+        expect(res.body.nextCursor).toBeNull();
+    });
+
+    it('paginates the community feed via the cursor', async () => {
+        const community = await makeCommunity(TEST_USERS.alice.id);
+        const created: string[] = [];
+        for (let i = 0; i < 3; i++) {
+            created.push((await makePost(TEST_USERS.alice.id, community.id, { title: `p${i}` })).id);
+        }
+
+        const page1 = await request(app).get(`/api/communities/${community.id}/posts?limit=2`);
+        expect(page1.body.items).toHaveLength(2);
+        expect(page1.body.nextCursor).toBeTruthy();
+
+        const page2 = await request(app).get(
+            `/api/communities/${community.id}/posts?limit=2&cursor=${page1.body.nextCursor}`,
+        );
+        expect(page2.body.items).toHaveLength(1);
+        expect(page2.body.nextCursor).toBeNull();
+
+        const seen = [...page1.body.items, ...page2.body.items].map((p: { id: string }) => p.id);
+        expect(new Set(seen)).toEqual(new Set(created));
+    });
+
+    it('returns 400 for a non-UUID community id', async () => {
+        const res = await request(app).get('/api/communities/not-a-uuid/posts');
+        expect(res.status).toBe(400);
+    });
+
+    it('folds in the caller\'s currentUserVote when authenticated', async () => {
+        const community = await makeCommunity(TEST_USERS.alice.id);
+        const post = await makePost(TEST_USERS.alice.id, community.id);
+        await request(app)
+            .put(`/api/posts/${post.id}/vote`)
+            .set('Authorization', authHeader(TEST_USERS.alice))
+            .send({ value: 1 });
+
+        const anon = await request(app).get(`/api/communities/${community.id}/posts`);
+        expect(anon.body.items[0].currentUserVote).toBeNull();
+
+        const authed = await request(app)
+            .get(`/api/communities/${community.id}/posts`)
+            .set('Authorization', authHeader(TEST_USERS.alice));
+        expect(authed.body.items[0].currentUserVote).toBe(1);
+    });
+});
+
 describe('communities: ownership on PATCH/DELETE', () => {
     it('lets the owner rename their community', async () => {
         const community = await makeCommunity(TEST_USERS.alice.id, 'before');
@@ -133,6 +208,14 @@ describe('communities: ownership on PATCH/DELETE', () => {
             .patch(`/api/communities/${randomUUID()}`)
             .set('Authorization', authHeader(TEST_USERS.alice))
             .send({ name: 'nope' });
+
+        expect(res.status).toBe(404);
+    });
+
+    it('returns 404 when deleting a missing community', async () => {
+        const res = await request(app)
+            .delete(`/api/communities/${randomUUID()}`)
+            .set('Authorization', authHeader(TEST_USERS.alice));
 
         expect(res.status).toBe(404);
     });

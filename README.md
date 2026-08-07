@@ -19,7 +19,7 @@ Routes are grouped by resource. Reads are generally public; writes require a bea
 
 **Auth and profiles.** `POST /auth/profile` creates the signed-in user's profile row, `GET /auth/me` returns it, and `GET /auth/profiles/:id` looks up any profile by id (public).
 
-**Communities.** `GET /communities` lists them and `GET /communities/:id` reads one (both public); `POST /communities` creates one; `PATCH` and `DELETE /communities/:id` update and remove it.
+**Communities.** `GET /communities` lists them and `GET /communities/:id` reads one (both public); `GET /communities/:id/posts` lists that community's posts (public, same shape and vote-enrichment as the main feed); `POST /communities` creates one; `PATCH` and `DELETE /communities/:id` update and remove it.
 
 **Posts.** `GET /posts` lists them and `GET /posts/:id` reads one — both public, both enriched with your current vote if you're authenticated. `POST /posts` creates a post, and `PATCH`/`DELETE /posts/:id` edit and remove it.
 
@@ -29,7 +29,7 @@ Routes are grouped by resource. Reads are generally public; writes require a bea
 
 Every write route (and everything above marked as requiring auth) goes through the same JWT check, and every route with a body or an id in the URL is validated by Zod first.
 
-The list endpoints — `GET /posts`, `GET /posts/:postId/comments`, and `GET /communities` — are cursor-paginated. Pass `?limit=` (default 20, max 100) and `?cursor=` (the id of the last item you saw), and they return a `{ items, nextCursor }` envelope, where `nextCursor` is `null` once you've reached the end. Ordering is newest-first with the row id as a tiebreak, so paging stays stable even when two rows share a creation time — and it leans on the `createdAt` index rather than counting past skipped rows the way `OFFSET` would. `GET /posts` additionally takes `?sort=new|top`: `new` (the default) is that newest-first order, while `top` ranks by the vote score (index-backed, so it stays cheap at any depth).
+The list endpoints — `GET /posts`, `GET /posts/:postId/comments`, `GET /communities`, and `GET /communities/:id/posts` — are cursor-paginated. Pass `?limit=` (default 20, max 100) and `?cursor=` (the id of the last item you saw), and they return a `{ items, nextCursor }` envelope, where `nextCursor` is `null` once you've reached the end. Ordering is newest-first with the row id as a tiebreak, so paging stays stable even when two rows share a creation time — and it leans on the `createdAt` index rather than counting past skipped rows the way `OFFSET` would. The two post feeds — `GET /posts` and `GET /communities/:id/posts` — additionally take `?sort=new|top`: `new` (the default) is that newest-first order, while `top` ranks by the vote score (index-backed, so it stays cheap at any depth). The only difference between the two is that the community feed is scoped to a single community; they share the same code path, shape, and vote-enrichment.
 
 ## Try it in Postman
 
@@ -44,6 +44,8 @@ Identity is only half of it. The other half is **ownership: you can only change 
 There are **two auth middlewares** rather than one. `requireAuth` is the strict gate: no valid token, no entry, straight to 401. `optionalAuth` is softer — it attaches the user if there's a valid token but waves everyone else through as anonymous. That's what lets the public feed keep working for someone whose session just expired, while still personalizing it for signed-in readers.
 
 **Validation happens at the edge.** The Zod schemas run as middleware before any handler code, so a controller never has to defend against a malformed body — by the time it runs, the input is already the right shape. The same schemas also generate the TypeScript types via `z.infer`, so there's a single source of truth for both the runtime check and the compile-time type.
+
+**Writes are rate limited.** Every mutating route runs behind an IP-based limiter — a client that exceeds the cap (100 requests in 15 minutes by default, both env-configurable) gets a 429, in the same `{ error: { message } }` envelope as any other error. Reads are exempt, since they're cheap and public. I key on the IP rather than the logged-in user deliberately: the goal is to blunt abuse, and keying on the user would just invite an attacker to drop their token and slip the limit. The limit disables itself under `NODE_ENV=test` so the suite can fire freely; the 429 path is covered by a dedicated test instead. (Behind a reverse proxy in production you'd set Express's `trust proxy` so the limiter sees the real client IP rather than the proxy's.)
 
 A couple of smaller things: there's **one shared Prisma client** (in `src/core/prismaSingleton.ts`) using the direct-connection `PrismaPg` adapter, rather than new clients scattered around. And **"not found" is handled deliberately** — the repository catches Prisma's `P2025` error and returns `null` instead of letting it throw, and the controller turns that `null` into a 404. Database errors get translated into HTTP responses rather than leaking out raw. And every error response, wherever it originates, is normalized to one shape — `{ error: { message, details? } }` — by a single middleware, so the error contract lives in exactly one place instead of being repeated at every handler.
 
@@ -85,7 +87,7 @@ There's also an opt-in **real-token** lane (`npm run test:realtoken`) that skips
 
 ## Still to come
 
-The core is complete, tested, paginated, and sortable. The main things I'd add before a client consumes this are rate limiting on the write routes and a small front end to actually browse it.
+The core is complete, tested, paginated, sortable, and rate limited. The main thing left is a small front end to actually browse it.
 
 ## Credits
 

@@ -20,8 +20,12 @@ const postsService = {
     // When provided, the repo includes the caller's vote on each post; we strip the raw `votes`
     // array and surface it as `currentUserVote: 1 | -1 | null` so the client never sees the
     // include shape and can render arrow state on first paint.
-    async getAllPosts(userId: string | undefined, pagination: PaginationQueryDTO & { sort?: 'new' | 'top' }) {
-        const rows = await postsRepository.findAll(userId, pagination);
+    async getAllPosts(
+        userId: string | undefined,
+        pagination: PaginationQueryDTO & { sort?: 'new' | 'top' },
+        communityId?: string,
+    ) {
+        const rows = await postsRepository.findAll(userId, pagination, communityId);
         const { items, nextCursor } = buildPage(rows, pagination.limit);
 
         const posts = items.map((post) => {
@@ -69,12 +73,6 @@ const postsService = {
             throw error;
         }
     },
-
-    async getPostsByCommunity(communityId: string) {
-
-        return await postsRepository.findByCommunityId(communityId);
-    },
-
 
     // Mirror of getAllPosts for a single post — same userId-through pattern, same reshape.
     async getPostById(postId: string, userId?: string) {

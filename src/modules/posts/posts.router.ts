@@ -31,7 +31,25 @@ postsRouter
     )
     .delete(requireAuth, validateParams(idParamsSchema), postsController.deletePost);
 
-// postsRouter.put('/:id', postsController.replacePostById);
-// a lot of APIs don't use .put at all -> only used to fully replace a post, not only specified fields, as .patch
+// No PUT /:id on purpose: PUT means "replace the whole resource", but the only editable fields are
+// title/content (author and community are fixed), so PATCH — partial update of just what's sent — is
+// the honest verb. A full-replace route would buy nothing here.
+
+
+// Nested list route, mounted at /communities/:id/posts in the main router. mergeParams: true lets
+// this inner router see :id from the outer mount path (otherwise req.params.id would be undefined).
+// Reuses postListQuerySchema so the community feed supports the same ?limit/?cursor/?sort as GET /posts.
+const communityPostsRouter = express.Router({ mergeParams: true });
+
+communityPostsRouter
+    .route('/')
+    .get(
+        optionalAuth,
+        validateParams(idParamsSchema),
+        validateQuery(postListQuerySchema),
+        postsController.getPostsByCommunity,
+    );
+
 
 export default postsRouter;
+export { communityPostsRouter };

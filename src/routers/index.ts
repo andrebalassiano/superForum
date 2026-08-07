@@ -1,6 +1,6 @@
 import express from 'express';
 
-import postsRouter from '../modules/posts/posts.router';
+import postsRouter, { communityPostsRouter } from '../modules/posts/posts.router';
 import authRouter from '../modules/auth/auth.router';
 import commentsRouter, { postCommentsRouter } from '../modules/comments/comments.router';
 import communitiesRouter from '../modules/communities/communities.router';
@@ -18,6 +18,8 @@ router.use('/posts/:postId/comments', postCommentsRouter);
 // nested vote route — exposes PUT/DELETE /posts/:postId/vote via the votes module
 router.use('/posts/:postId/vote', postVotesRouter);
 router.use('/communities', communitiesRouter);
+// nested list route — exposes GET /communities/:id/posts via the posts module
+router.use('/communities/:id/posts', communityPostsRouter);
 
 
 

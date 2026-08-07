@@ -64,9 +64,9 @@ const commentsController = {
         }
     },
 
-    // expects the route to expose `postId` as a URL param (e.g. /comments/by-post/:postId)
-    // — kept generic here so the router decides the URL shape
-    async getCommentsByPostId(req: Request<{ postId: string }>, res: Response) {
+    // Mounted at GET /posts/:postId/comments — postId comes from the URL (via the nested router's
+    // mergeParams), validated as a UUID by validateParams before this runs.
+    async getCommentsByPostId(req: Request<PostIdParamsDTO>, res: Response) {
         const { postId } = req.params;
 
         try {

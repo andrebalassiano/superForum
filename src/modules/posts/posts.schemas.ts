@@ -9,8 +9,6 @@ export const postListQuerySchema = z.object({
     sort: z.enum(['new', 'top']).default('new'),
 }).strict();
 
-export type PostListQueryDTO = z.infer<typeof postListQuerySchema>;
-
 
 // authorId is intentionally NOT in the body — it's pulled from req.user.id (set by requireAuth)
 // so a client can't impersonate another user by sending someone else's id.
@@ -25,8 +23,9 @@ export const idParamsSchema = z.object({
     id: z.uuid(),
 });
 
-// export const updatePostSchema = createPostSchema.partial();
-
+// Spelled out rather than `createPostSchema.partial()`: a post's community is fixed at creation, so
+// PATCH must NOT accept communityId. Deriving from the create schema would leak it in as an editable
+// (optional) field, letting a client move a post between communities.
 export const updatePostSchema = z.object({
     title: z.string().trim().min(1).optional(),
     content: z.string().min(1).optional(),
