@@ -7,15 +7,12 @@ import {
     UpdateCommentDTO,
 } from './comments.schemas';
 
-
 const commentsController = {
-
     // Mounted at POST /posts/:postId/comments — postId comes from the URL, authorId from the token.
     async createCommentForPost(
         req: Request<PostIdParamsDTO, object, CreateCommentBodyDTO>,
         res: Response,
     ) {
-
         // defensive check — requireAuth should guarantee req.user, but TS doesn't know that
         if (!req.user) {
             return res.status(401).json({ message: 'Unauthorized' });
@@ -29,7 +26,9 @@ const commentsController = {
 
             // caller authenticated but never created their Profile row — tell them precisely
             if (comment === PROFILE_NOT_FOUND) {
-                return res.status(404).json({ message: 'Profile not found — create your profile first' });
+                return res
+                    .status(404)
+                    .json({ message: 'Profile not found — create your profile first' });
             }
 
             // service returns null when the referenced post doesn't exist (P2025) — map to 404
@@ -38,7 +37,6 @@ const commentsController = {
             }
 
             return res.status(201).json(comment);
-
         } catch (error) {
             console.error(error);
             return res.status(500).json({ message: 'Failed to create comment' });
@@ -57,7 +55,6 @@ const commentsController = {
             }
 
             return res.status(200).json(comment);
-
         } catch (error) {
             console.error(error);
             return res.status(500).json({ message: 'Failed to fetch comment' });
@@ -71,11 +68,14 @@ const commentsController = {
 
         try {
             const pagination = req.pagination ?? { limit: 20 };
-            const comments = await commentsService.getCommentsByPostId(postId, req.user?.id, pagination);
+            const comments = await commentsService.getCommentsByPostId(
+                postId,
+                req.user?.id,
+                pagination,
+            );
 
             // empty list is a valid result (post simply has no comments yet) — don't 404
             return res.status(200).json(comments);
-
         } catch (error) {
             console.error(error);
             return res.status(500).json({ message: 'Failed to fetch comments' });
@@ -83,7 +83,6 @@ const commentsController = {
     },
 
     async updateComment(req: Request<IdParamsDTO, object, UpdateCommentDTO>, res: Response) {
-
         // defensive check — requireAuth should guarantee req.user, but TS doesn't know that
         if (!req.user) {
             return res.status(401).json({ message: 'Unauthorized' });
@@ -104,7 +103,6 @@ const commentsController = {
             }
 
             return res.status(200).json(comment);
-
         } catch (error) {
             console.error(error);
             return res.status(500).json({ message: 'Failed to update comment' });
@@ -112,7 +110,6 @@ const commentsController = {
     },
 
     async deleteComment(req: Request<IdParamsDTO>, res: Response) {
-
         // defensive check — requireAuth should guarantee req.user, but TS doesn't know that
         if (!req.user) {
             return res.status(401).json({ message: 'Unauthorized' });
@@ -133,13 +130,11 @@ const commentsController = {
 
             // 204 No Content is the REST standard for a successful delete — nothing to send back
             return res.sendStatus(204);
-
         } catch (error) {
             console.error(error);
             return res.status(500).json({ message: 'Failed to delete comment' });
         }
     },
 };
-
 
 export default commentsController;

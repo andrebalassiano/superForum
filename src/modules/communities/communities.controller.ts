@@ -4,7 +4,6 @@ import { CreateCommunityDTO, IdParamsDTO, UpdateCommunityDTO } from './communiti
 
 const communitiesController = {
     async createCommunity(req: Request<object, object, CreateCommunityDTO>, res: Response) {
-
         // defensive check — requireAuth should guarantee req.user, but TS doesn't know that
         if (!req.user) {
             return res.status(401).json({ message: 'Unauthorized' });
@@ -20,7 +19,6 @@ const communitiesController = {
             }
 
             return res.status(201).json(community);
-
         } catch (error) {
             console.error(error);
             return res.status(500).json({ message: 'Failed to create community' });
@@ -33,7 +31,6 @@ const communitiesController = {
             const communities = await communitiesService.getAllCommunities(pagination);
 
             return res.status(200).json(communities);
-
         } catch (error) {
             console.error(error);
             return res.status(500).json({ message: 'Failed to fetch communities' });
@@ -51,7 +48,6 @@ const communitiesController = {
             }
 
             return res.status(200).json(community);
-
         } catch (error) {
             console.error(error);
             return res.status(500).json({ message: 'Failed to fetch community' });
@@ -59,7 +55,6 @@ const communitiesController = {
     },
 
     async updateCommunity(req: Request<IdParamsDTO, object, UpdateCommunityDTO>, res: Response) {
-
         // defensive check — requireAuth should guarantee req.user, but TS doesn't know that
         if (!req.user) {
             return res.status(401).json({ message: 'Unauthorized' });
@@ -72,7 +67,9 @@ const communitiesController = {
 
             // caller isn't the owner — 403 (distinct from 404 for a genuinely missing community)
             if (community === FORBIDDEN) {
-                return res.status(403).json({ message: 'You can only modify your own communities' });
+                return res
+                    .status(403)
+                    .json({ message: 'You can only modify your own communities' });
             }
 
             if (!community) {
@@ -80,7 +77,6 @@ const communitiesController = {
             }
 
             return res.status(200).json(community);
-
         } catch (error) {
             console.error(error);
             return res.status(500).json({ message: 'Failed to update community' });
@@ -88,7 +84,6 @@ const communitiesController = {
     },
 
     async deleteCommunity(req: Request<IdParamsDTO>, res: Response) {
-
         // defensive check — requireAuth should guarantee req.user, but TS doesn't know that
         if (!req.user) {
             return res.status(401).json({ message: 'Unauthorized' });
@@ -100,7 +95,9 @@ const communitiesController = {
             const community = await communitiesService.deleteCommunity(id, req.user.id);
 
             if (community === FORBIDDEN) {
-                return res.status(403).json({ message: 'You can only modify your own communities' });
+                return res
+                    .status(403)
+                    .json({ message: 'You can only modify your own communities' });
             }
 
             if (!community) {
@@ -108,7 +105,6 @@ const communitiesController = {
             }
 
             return res.sendStatus(204);
-
         } catch (error) {
             console.error(error);
             return res.status(500).json({ message: 'Failed to delete community' });

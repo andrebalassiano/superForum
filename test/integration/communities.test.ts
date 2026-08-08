@@ -78,7 +78,9 @@ describe('communities: reads', () => {
         expect(page1.body.items).toHaveLength(2);
         expect(page1.body.nextCursor).toBeTruthy();
 
-        const page2 = await request(app).get(`/api/communities?limit=2&cursor=${page1.body.nextCursor}`);
+        const page2 = await request(app).get(
+            `/api/communities?limit=2&cursor=${page1.body.nextCursor}`,
+        );
         expect(page2.body.items).toHaveLength(1);
         expect(page2.body.nextCursor).toBeNull();
 
@@ -105,7 +107,7 @@ describe('communities: reads', () => {
 });
 
 describe('communities: GET /api/communities/:id/posts', () => {
-    it('returns a paginated envelope of the community\'s posts', async () => {
+    it("returns a paginated envelope of the community's posts", async () => {
         const community = await makeCommunity(TEST_USERS.alice.id);
         await makePost(TEST_USERS.alice.id, community.id);
 
@@ -115,7 +117,7 @@ describe('communities: GET /api/communities/:id/posts', () => {
         expect(res.body.nextCursor).toBeNull();
     });
 
-    it('scopes the feed to the community — other communities\' posts are excluded', async () => {
+    it("scopes the feed to the community — other communities' posts are excluded", async () => {
         const a = await makeCommunity(TEST_USERS.alice.id);
         const b = await makeCommunity(TEST_USERS.alice.id);
         const mine = await makePost(TEST_USERS.alice.id, a.id, { title: 'in A' });
@@ -139,7 +141,9 @@ describe('communities: GET /api/communities/:id/posts', () => {
         const community = await makeCommunity(TEST_USERS.alice.id);
         const created: string[] = [];
         for (let i = 0; i < 3; i++) {
-            created.push((await makePost(TEST_USERS.alice.id, community.id, { title: `p${i}` })).id);
+            created.push(
+                (await makePost(TEST_USERS.alice.id, community.id, { title: `p${i}` })).id,
+            );
         }
 
         const page1 = await request(app).get(`/api/communities/${community.id}/posts?limit=2`);
@@ -161,7 +165,7 @@ describe('communities: GET /api/communities/:id/posts', () => {
         expect(res.status).toBe(400);
     });
 
-    it('folds in the caller\'s currentUserVote when authenticated', async () => {
+    it("folds in the caller's currentUserVote when authenticated", async () => {
         const community = await makeCommunity(TEST_USERS.alice.id);
         const post = await makePost(TEST_USERS.alice.id, community.id);
         await request(app)

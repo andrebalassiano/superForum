@@ -4,7 +4,11 @@ import requireAuth from '../../middleware/requireAuth';
 import validateBody from '../../middleware/validateBody';
 import validateParams from '../../middleware/validateParams';
 import validateQuery from '../../middleware/validateQuery';
-import { createCommunitySchema, updateCommunitySchema, idParamsSchema } from './communities.schemas';
+import {
+    createCommunitySchema,
+    updateCommunitySchema,
+    idParamsSchema,
+} from './communities.schemas';
 import { paginationQuerySchema } from '../../core/pagination';
 
 const communitiesRouter = express.Router();

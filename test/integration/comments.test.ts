@@ -32,7 +32,9 @@ describe('comments: POST /api/posts/:postId/comments', () => {
     });
 
     it('returns 401 without a token', async () => {
-        const res = await request(app).post(`/api/posts/${postId}/comments`).send(validCommentBody());
+        const res = await request(app)
+            .post(`/api/posts/${postId}/comments`)
+            .send(validCommentBody());
         expect(res.status).toBe(401);
     });
 
@@ -91,7 +93,7 @@ describe('comments: reads', () => {
         expect(res.status).toBe(404);
     });
 
-    it('nested GET /api/posts/:postId/comments lists the post\'s comments', async () => {
+    it("nested GET /api/posts/:postId/comments lists the post's comments", async () => {
         await makeComment(TEST_USERS.alice.id, postId, 'one');
         await makeComment(TEST_USERS.bob.id, postId, 'two');
 

@@ -4,14 +4,7 @@ import prisma from '../../src/core/prismaSingleton';
 // CASCADE handles the foreign keys (a Community delete cascades to its Posts, etc.);
 // RESTART IDENTITY resets any sequence counters. Order doesn't matter with CASCADE,
 // but the child-first listing keeps intent obvious.
-const TABLES = [
-    'PostVote',
-    'CommentVote',
-    'Comment',
-    'Post',
-    'Community',
-    'Profile',
-] as const;
+const TABLES = ['PostVote', 'CommentVote', 'Comment', 'Post', 'Community', 'Profile'] as const;
 
 export async function truncateAll() {
     const list = TABLES.map((t) => `"${t}"`).join(', ');

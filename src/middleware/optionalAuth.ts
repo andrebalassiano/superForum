@@ -1,7 +1,6 @@
 import { NextFunction, Request, Response } from 'express';
 import supabase from '../core/supabaseClient';
 
-
 // Soft sibling to requireAuth: populates req.user when a valid token is present, but never rejects.
 // Use this on GET routes that are public but want to personalize the response when the caller is
 // known (e.g. fold "your current vote" into the post feed). Anonymous callers fall through with

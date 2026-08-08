@@ -28,7 +28,11 @@ export function makeCommunity(ownerId: string, name?: string) {
     });
 }
 
-export function makePost(authorId: string, communityId: string, overrides?: { title?: string; content?: string }) {
+export function makePost(
+    authorId: string,
+    communityId: string,
+    overrides?: { title?: string; content?: string },
+) {
     return prisma.post.create({
         data: {
             title: overrides?.title ?? 'Seed title',

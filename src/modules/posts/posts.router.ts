@@ -5,7 +5,12 @@ import optionalAuth from '../../middleware/optionalAuth';
 import validateBody from '../../middleware/validateBody';
 import validateParams from '../../middleware/validateParams';
 import validateQuery from '../../middleware/validateQuery';
-import { createPostSchema, updatePostSchema, idParamsSchema, postListQuerySchema } from './posts.schemas';
+import {
+    createPostSchema,
+    updatePostSchema,
+    idParamsSchema,
+    postListQuerySchema,
+} from './posts.schemas';
 
 const postsRouter = express.Router();
 
@@ -35,7 +40,6 @@ postsRouter
 // title/content (author and community are fixed), so PATCH — partial update of just what's sent — is
 // the honest verb. A full-replace route would buy nothing here.
 
-
 // Nested list route, mounted at /communities/:id/posts in the main router. mergeParams: true lets
 // this inner router see :id from the outer mount path (otherwise req.params.id would be undefined).
 // Reuses postListQuerySchema so the community feed supports the same ?limit/?cursor/?sort as GET /posts.
@@ -49,7 +53,6 @@ communityPostsRouter
         validateQuery(postListQuerySchema),
         postsController.getPostsByCommunity,
     );
-
 
 export default postsRouter;
 export { communityPostsRouter };

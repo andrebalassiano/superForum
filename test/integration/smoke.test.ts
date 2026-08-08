@@ -29,13 +29,11 @@ describe('smoke: POST /api/posts', () => {
     });
 
     it('rejects an unauthenticated create with 401', async () => {
-        const res = await request(app)
-            .post('/api/posts')
-            .send({
-                title: 'No token',
-                content: 'should be rejected',
-                communityId: '33333333-3333-3333-3333-333333333333',
-            });
+        const res = await request(app).post('/api/posts').send({
+            title: 'No token',
+            content: 'should be rejected',
+            communityId: '33333333-3333-3333-3333-333333333333',
+        });
 
         expect(res.status).toBe(401);
     });

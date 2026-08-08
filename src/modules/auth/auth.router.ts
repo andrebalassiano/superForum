@@ -5,7 +5,6 @@ import validateBody from '../../middleware/validateBody';
 import validateParams from '../../middleware/validateParams';
 import { createProfileSchema, idParamsSchema } from './auth.schemas';
 
-
 const authRouter = express.Router();
 
 // Creates the current user's Profile row (Supabase UUID = Profile.id); requires auth + validated body.
@@ -19,9 +18,6 @@ authRouter
     .get(validateParams(idParamsSchema), authController.getProfileById);
 
 // Returns the authenticated caller's own Profile, resolved from req.user.id set by requireAuth.
-authRouter
-    .route('/me')
-    .get(requireAuth, authController.getCurrentProfile);
-
+authRouter.route('/me').get(requireAuth, authController.getCurrentProfile);
 
 export default authRouter;

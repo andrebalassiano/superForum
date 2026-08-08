@@ -4,9 +4,11 @@ import z from 'zod';
 // Only +1 (upvote) or -1 (downvote) are accepted — "no vote" is expressed by DELETE,
 // not by sending value: 0, which keeps the DB free of zero-value rows.
 // .strict() rejects unknown keys with a 400 instead of silently ignoring them.
-export const voteBodySchema = z.object({
-    value: z.union([z.literal(1), z.literal(-1)]),
-}).strict();
+export const voteBodySchema = z
+    .object({
+        value: z.union([z.literal(1), z.literal(-1)]),
+    })
+    .strict();
 
 // for routes mounted under /posts/:postId/... — validates the URL param as a UUID
 export const postIdParamsSchema = z.object({

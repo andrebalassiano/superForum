@@ -17,9 +17,5 @@
     "noEmitOnError": true
   },
   "include": ["src/**/*.ts"],
-  "exclude": [
-    "node_modules",
-    "dist",
-    "src/generated/prisma"
-  ]
+  "exclude": ["node_modules", "dist", "src/generated/prisma"]
 }

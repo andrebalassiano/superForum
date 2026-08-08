@@ -11,7 +11,7 @@ if (!g[FLAG]) {
 
     const originalEmit = process.emitWarning.bind(process);
     process.emitWarning = ((warning: string | Error, ...args: unknown[]) => {
-        const message = typeof warning === 'string' ? warning : warning?.message ?? '';
+        const message = typeof warning === 'string' ? warning : (warning?.message ?? '');
         if (message.includes('client.query() when the client is already executing a query')) {
             return;
         }

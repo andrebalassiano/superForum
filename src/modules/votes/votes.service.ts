@@ -4,15 +4,12 @@ import authRepository from '../auth/auth.repository';
 import { Prisma } from '../../generated/prisma/client';
 import { VoteBodyDTO } from './votes.schemas';
 
-
 // Returned by the set* methods when the caller's Profile row doesn't exist yet — they authenticated
 // with Supabase but never ran POST /auth/profile. Lets the controller answer with a precise message
 // instead of a misleading "Post/Comment not found".
 export const PROFILE_NOT_FOUND = 'PROFILE_NOT_FOUND' as const;
 
-
 const votesService = {
-
     // ----- post votes -----
 
     // userId comes from req.user.id (set by requireAuth) — never trust a body-supplied user.
@@ -71,6 +68,5 @@ const votesService = {
         return await commentVoteRepository.deleteWithScore(commentId, userId);
     },
 };
-
 
 export default votesService;

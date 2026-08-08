@@ -1,7 +1,6 @@
 import prisma from '../../core/prismaSingleton';
 
 const postVoteRepository = {
-
     // Upsert the caller's vote AND keep the post's denormalized `score` in sync, atomically.
     // We read the old value first so the score delta is (newValue - oldValue): a fresh +1 adds 1,
     // a switch from +1 to -1 subtracts 2, a repeat of the same value is a no-op. The transaction
@@ -36,7 +35,6 @@ const postVoteRepository = {
         });
     },
 
-
     // Delete the caller's vote and back its value out of the post's score, atomically.
     // Returns null when there was no vote to remove (the service maps that to a 404).
     async deleteWithScore(postId: string, userId: string) {
@@ -62,6 +60,5 @@ const postVoteRepository = {
         });
     },
 };
-
 
 export default postVoteRepository;

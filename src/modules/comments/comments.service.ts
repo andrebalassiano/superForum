@@ -4,7 +4,6 @@ import { Prisma } from '../../generated/prisma/client';
 import { CreateCommentBodyDTO, UpdateCommentDTO } from './comments.schemas';
 import { buildPage, PaginationQueryDTO } from '../../core/pagination';
 
-
 // Returned by update/delete when the caller isn't the comment's author — controller maps it to 403.
 // Distinct from null, which means "no such comment" → 404.
 export const FORBIDDEN = 'FORBIDDEN' as const;
@@ -15,7 +14,6 @@ export const FORBIDDEN = 'FORBIDDEN' as const;
 export const PROFILE_NOT_FOUND = 'PROFILE_NOT_FOUND' as const;
 
 const commentsService = {
-
     // authorId comes from the authenticated caller (req.user.id) and postId from the URL —
     // neither is taken from the body, closing the impersonation / post-reassignment holes.
     async createComment(authorId: string, postId: string, dto: CreateCommentBodyDTO) {
@@ -66,7 +64,11 @@ const commentsService = {
 
     // Same reshape, applied to every comment in the page — single round-trip, all arrow states
     // ready for the client to render on first paint. Returns the { items, nextCursor } envelope.
-    async getCommentsByPostId(postId: string, userId: string | undefined, pagination: PaginationQueryDTO) {
+    async getCommentsByPostId(
+        postId: string,
+        userId: string | undefined,
+        pagination: PaginationQueryDTO,
+    ) {
         const rows = await commentsRepository.findByPostId(postId, userId, pagination);
         const { items, nextCursor } = buildPage(rows, pagination.limit);
 
@@ -127,6 +129,5 @@ const commentsService = {
         }
     },
 };
-
 
 export default commentsService;

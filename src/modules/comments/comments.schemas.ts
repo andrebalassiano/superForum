@@ -4,15 +4,19 @@ import z from 'zod';
 // comes from the URL, not the body; authorId comes from req.user.id (set by requireAuth).
 // Neither is accepted in the body, so a client can't impersonate a user or reassign a post.
 // .strict() rejects unknown keys with a 400 (including a stray postId) instead of ignoring them.
-export const createCommentBodySchema = z.object({
-    content: z.string().trim().min(1),
-}).strict();
+export const createCommentBodySchema = z
+    .object({
+        content: z.string().trim().min(1),
+    })
+    .strict();
 
 // body for PATCH /comments/:id — only `content` is editable; postId/authorId are immutable
 // (you don't reassign a comment to a different post).
-export const updateCommentSchema = z.object({
-    content: z.string().trim().min(1).optional(),
-}).strict();
+export const updateCommentSchema = z
+    .object({
+        content: z.string().trim().min(1).optional(),
+    })
+    .strict();
 
 // reusable schema for any route with a UUID in the URL (e.g. /:id)
 export const idParamsSchema = z.object({

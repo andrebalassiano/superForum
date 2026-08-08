@@ -3,7 +3,6 @@ import { Prisma } from '../../generated/prisma/client';
 import { CreateCommunityDTO, UpdateCommunityDTO } from './communities.schemas';
 import { buildPage, PaginationQueryDTO } from '../../core/pagination';
 
-
 // Returned by update/delete when the caller isn't the community's owner — controller maps it to 403.
 // Distinct from null, which means "no such community" → 404.
 export const FORBIDDEN = 'FORBIDDEN' as const;

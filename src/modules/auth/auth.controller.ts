@@ -2,10 +2,8 @@ import { Request, Response } from 'express';
 import authService from './auth.service';
 import { CreateProfileDTO, IdParamsDTO } from './auth.schemas';
 
-
 const authController = {
     async createProfile(req: Request<object, object, CreateProfileDTO>, res: Response) {
-
         try {
             const dto = req.body;
 
@@ -20,7 +18,6 @@ const authController = {
             }
 
             return res.status(201).json(profile);
-
         } catch (error) {
             console.error(error);
 
@@ -29,7 +26,6 @@ const authController = {
     },
 
     async getProfileById(req: Request<IdParamsDTO>, res: Response) {
-
         const { id } = req.params;
 
         try {
@@ -40,7 +36,6 @@ const authController = {
             }
 
             return res.status(200).json(profile);
-
         } catch (error) {
             console.error(error);
 
@@ -49,7 +44,6 @@ const authController = {
     },
 
     async getCurrentProfile(req: Request, res: Response) {
-
         if (!req.user) {
             return res.status(401).json({ message: 'Unauthorized' });
         }
@@ -62,7 +56,6 @@ const authController = {
             }
 
             return res.status(200).json(profile);
-
         } catch (error) {
             console.error(error);
 

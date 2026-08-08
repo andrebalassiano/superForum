@@ -16,9 +16,10 @@ const postsRepository = {
         communityId?: string,
     ) {
         const { limit, cursor, sort } = pagination;
-        const orderBy = sort === 'top'
-            ? [{ score: 'desc' as const }, { id: 'desc' as const }]
-            : [{ createdAt: 'desc' as const }, { id: 'desc' as const }];
+        const orderBy =
+            sort === 'top'
+                ? [{ score: 'desc' as const }, { id: 'desc' as const }]
+                : [{ createdAt: 'desc' as const }, { id: 'desc' as const }];
 
         return prisma.post.findMany({
             take: limit + 1,
@@ -32,9 +33,7 @@ const postsRepository = {
                         comments: true,
                     },
                 },
-                ...(userId
-                    ? { votes: { where: { userId }, select: { value: true } } }
-                    : {}),
+                ...(userId ? { votes: { where: { userId }, select: { value: true } } } : {}),
             },
             orderBy,
         });
@@ -63,15 +62,12 @@ const postsRepository = {
                         comments: true,
                     },
                 },
-                ...(userId
-                    ? { votes: { where: { userId }, select: { value: true } } }
-                    : {}),
+                ...(userId ? { votes: { where: { userId }, select: { value: true } } } : {}),
             },
         });
     },
 
-    async updateById(where: Prisma.PostWhereUniqueInput,
-                    data: Prisma.PostUpdateInput) {
+    async updateById(where: Prisma.PostWhereUniqueInput, data: Prisma.PostUpdateInput) {
         return prisma.post.update({
             where,
             data,
@@ -93,7 +89,6 @@ const postsRepository = {
             where,
         });
     },
-}
-
+};
 
 export default postsRepository;

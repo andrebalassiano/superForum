@@ -129,7 +129,9 @@ describe('posts: pagination', () => {
         const community = await makeCommunity(TEST_USERS.alice.id);
         const created: string[] = [];
         for (let i = 0; i < 3; i++) {
-            created.push((await makePost(TEST_USERS.alice.id, community.id, { title: `p${i}` })).id);
+            created.push(
+                (await makePost(TEST_USERS.alice.id, community.id, { title: `p${i}` })).id,
+            );
         }
 
         const page1 = await request(app).get('/api/posts?limit=2');

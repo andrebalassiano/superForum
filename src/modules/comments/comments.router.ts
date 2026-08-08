@@ -13,7 +13,6 @@ import {
 } from './comments.schemas';
 import { paginationQuerySchema } from '../../core/pagination';
 
-
 // Single-comment routes (read / update / delete), mounted at /comments in the main router.
 // Creation lives on the nested postCommentsRouter below, since a comment belongs to a post.
 const commentsRouter = express.Router();
@@ -30,7 +29,6 @@ commentsRouter
         commentsController.updateComment,
     )
     .delete(requireAuth, validateParams(idParamsSchema), commentsController.deleteComment);
-
 
 // Nested list route, mounted at /posts/:postId/comments in the main router.
 // mergeParams: true lets this inner router see :postId from the outer mount path
@@ -54,7 +52,6 @@ postCommentsRouter
         validateBody(createCommentBodySchema),
         commentsController.createCommentForPost,
     );
-
 
 export default commentsRouter;
 export { postCommentsRouter };

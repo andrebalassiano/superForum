@@ -21,6 +21,4 @@ router.use('/communities', communitiesRouter);
 // nested list route — exposes GET /communities/:id/posts via the posts module
 router.use('/communities/:id/posts', communityPostsRouter);
 
-
-
 export default router;

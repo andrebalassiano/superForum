@@ -6,7 +6,7 @@ import { TEST_USERS, authHeader } from '../helpers/auth';
 import { makeProfile } from '../helpers/seed';
 
 describe('auth: POST /api/auth/profile', () => {
-    it('creates the caller\'s profile keyed to the token user id', async () => {
+    it("creates the caller's profile keyed to the token user id", async () => {
         const res = await request(app)
             .post('/api/auth/profile')
             .set('Authorization', authHeader(TEST_USERS.alice))
@@ -18,9 +18,7 @@ describe('auth: POST /api/auth/profile', () => {
     });
 
     it('rejects an unauthenticated create with 401', async () => {
-        const res = await request(app)
-            .post('/api/auth/profile')
-            .send({ username: 'nobody' });
+        const res = await request(app).post('/api/auth/profile').send({ username: 'nobody' });
 
         expect(res.status).toBe(401);
     });
@@ -56,7 +54,7 @@ describe('auth: POST /api/auth/profile', () => {
 });
 
 describe('auth: GET /api/auth/me', () => {
-    it('returns the authenticated caller\'s own profile', async () => {
+    it("returns the authenticated caller's own profile", async () => {
         await makeProfile(TEST_USERS.alice, 'alice');
 
         const res = await request(app)

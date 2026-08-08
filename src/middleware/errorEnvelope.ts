@@ -1,6 +1,5 @@
 import { NextFunction, Request, Response } from 'express';
 
-
 // Normalizes every error response into one consistent shape: `{ error: { message, details? } }`.
 // Controllers and the other middlewares keep sending plain `{ message }` (or `{ message, errors }`
 // for validation) — this wraps res.json once per request so the envelope lives in exactly ONE

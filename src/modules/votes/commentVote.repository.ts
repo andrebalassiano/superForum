@@ -1,7 +1,6 @@
 import prisma from '../../core/prismaSingleton';
 
 const commentVoteRepository = {
-
     // Mirror of postVoteRepository.upsertWithScore — upsert the vote and keep the comment's
     // denormalized `score` in sync atomically, using the (newValue - oldValue) delta.
     async upsertWithScore(commentId: string, userId: string, value: number) {
@@ -33,7 +32,6 @@ const commentVoteRepository = {
         });
     },
 
-
     // Mirror of postVoteRepository.deleteWithScore — returns null when there was no vote to remove.
     async deleteWithScore(commentId: string, userId: string) {
         return prisma.$transaction(async (tx) => {
@@ -58,6 +56,5 @@ const commentVoteRepository = {
         });
     },
 };
-
 
 export default commentVoteRepository;

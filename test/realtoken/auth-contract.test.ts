@@ -47,9 +47,7 @@ describe.skipIf(!hasCreds)('real-token auth contract', () => {
             .send({ username: `realtoken_${Date.now()}` });
         expect(created.status).toBe(201);
 
-        const me = await request(app)
-            .get('/api/auth/me')
-            .set('Authorization', `Bearer ${token}`);
+        const me = await request(app).get('/api/auth/me').set('Authorization', `Bearer ${token}`);
         expect(me.status).toBe(200);
         expect(me.body.id).toBe(userId);
     });
