@@ -1,0 +1,15 @@
+# Generated Prisma client — never format machine-generated code
+src/generated
+
+# Build output + coverage reports
+dist
+coverage
+
+# Lockfile
+package-lock.json
+
+# Hand-authored prose docs — keep their deliberate layout and voice
+*.md
+
+# Postman's own export format (2-space); formatting it would churn every re-export
+postman

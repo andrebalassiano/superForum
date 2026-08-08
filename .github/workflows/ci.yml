@@ -1,83 +1,91 @@
 # Continuous Integration: on every push to main and every pull request, GitHub spins up
 # a fresh Ubuntu VM, stands up a throwaway Postgres, installs the project from scratch,
-# and runs the type-check + Vitest suite. A non-zero exit from any step fails the run
+# and runs the type-check, lint, format check, and Vitest suite. A non-zero exit from any step fails the run
 # (the red/green status the README badge and PR checks read from).
 name: CI
 
 on:
-  push:
-    branches: [main]
-  pull_request:
+    push:
+        branches: [main]
+    pull_request:
 
 # If you push again before a run finishes, cancel the in-flight one for this branch.
 concurrency:
-  group: ci-${{ github.ref }}
-  cancel-in-progress: true
+    group: ci-${{ github.ref }}
+    cancel-in-progress: true
 
 jobs:
-  test:
-    runs-on: ubuntu-latest
+    test:
+        runs-on: ubuntu-latest
 
-    # A Postgres container running alongside the job — the CI equivalent of
-    # docker-compose.test.yml. GitHub starts it, waits for the health check, and exposes
-    # it on localhost:5432. No Docker install needed here; the runner is a container host.
-    services:
-      postgres:
-        image: postgres:16
+        # A Postgres container running alongside the job — the CI equivalent of
+        # docker-compose.test.yml. GitHub starts it, waits for the health check, and exposes
+        # it on localhost:5432. No Docker install needed here; the runner is a container host.
+        services:
+            postgres:
+                image: postgres:16
+                env:
+                    POSTGRES_USER: postgres
+                    POSTGRES_PASSWORD: postgres
+                    POSTGRES_DB: superforum_test
+                ports:
+                    - 5432:5432
+                options: >-
+                    --health-cmd "pg_isready -U postgres -d superforum_test"
+                    --health-interval 5s
+                    --health-timeout 5s
+                    --health-retries 10
+
+        # The test DB connection string, injected for every step. This is safe to hard-code
+        # (not a secret) precisely because the Supabase auth boundary is mocked in the suite,
+        # so no real credentials are ever needed. .env.test is git-ignored and absent in CI,
+        # so the harness's load-env step finds no file and this value stands.
         env:
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: superforum_test
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd "pg_isready -U postgres -d superforum_test"
-          --health-interval 5s
-          --health-timeout 5s
-          --health-retries 10
+            DATABASE_URL: postgresql://postgres:postgres@localhost:5432/superforum_test?schema=public
 
-    # The test DB connection string, injected for every step. This is safe to hard-code
-    # (not a secret) precisely because the Supabase auth boundary is mocked in the suite,
-    # so no real credentials are ever needed. .env.test is git-ignored and absent in CI,
-    # so the harness's load-env step finds no file and this value stands.
-    env:
-      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/superforum_test?schema=public
+        steps:
+            - name: Check out the repo
+              uses: actions/checkout@v4
 
-    steps:
-      - name: Check out the repo
-        uses: actions/checkout@v4
+            - name: Set up Node
+              uses: actions/setup-node@v4
+              with:
+                  node-version: '24'
+                  cache: npm
 
-      - name: Set up Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: '24'
-          cache: npm
+            - name: Install dependencies
+              run: npm ci
 
-      - name: Install dependencies
-        run: npm ci
+            # The Prisma client is generated to src/generated/prisma, which is git-ignored —
+            # so on a clean checkout it doesn't exist yet and must be generated before anything
+            # imports it.
+            - name: Generate Prisma client
+              run: npx prisma generate
 
-      # The Prisma client is generated to src/generated/prisma, which is git-ignored —
-      # so on a clean checkout it doesn't exist yet and must be generated before anything
-      # imports it.
-      - name: Generate Prisma client
-        run: npx prisma generate
+            # Build the schema into the fresh Postgres. (global-setup.ts also runs this before
+            # the suite; doing it here too makes migration failures a distinct, visible CI step.)
+            - name: Apply migrations to the test database
+              run: npx prisma migrate deploy
 
-      # Build the schema into the fresh Postgres. (global-setup.ts also runs this before
-      # the suite; doing it here too makes migration failures a distinct, visible CI step.)
-      - name: Apply migrations to the test database
-        run: npx prisma migrate deploy
+            - name: Type-check
+              run: npm run typecheck
 
-      - name: Type-check
-        run: npm run typecheck
+            # ESLint is type-aware (reads tsconfig.eslint.json), so it needs the generated Prisma
+            # client from the step above to resolve types in the source it lints.
+            - name: Lint
+              run: npm run lint
 
-      - name: Run tests with coverage
-        run: npm run test:coverage
+            - name: Check formatting
+              run: npm run format:check
 
-      # Publishes coverage/lcov.info (written by the vitest lcov reporter) to Codecov,
-      # which drives the coverage badge. CODECOV_TOKEN is a repo secret, not committed.
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v5
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          files: ./coverage/lcov.info
-          fail_ci_if_error: false
+            - name: Run tests with coverage
+              run: npm run test:coverage
+
+            # Publishes coverage/lcov.info (written by the vitest lcov reporter) to Codecov,
+            # which drives the coverage badge. CODECOV_TOKEN is a repo secret, not committed.
+            - name: Upload coverage to Codecov
+              uses: codecov/codecov-action@v5
+              with:
+                  token: ${{ secrets.CODECOV_TOKEN }}
+                  files: ./coverage/lcov.info
+                  fail_ci_if_error: false

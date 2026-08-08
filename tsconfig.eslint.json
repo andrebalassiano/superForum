@@ -1,0 +1,12 @@
+{
+  // Lint-only program: the build tsconfig is scoped to src/ (rootDir ./src, emits to dist), but
+  // type-aware ESLint needs EVERY file it lints — tests and root config files included — inside a
+  // TS program. This widens the include and drops the rootDir/emit constraints; it never builds.
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "rootDir": ".",
+    "noEmit": true
+  },
+  "include": ["src/**/*.ts", "test/**/*.ts", "*.config.ts"],
+  "exclude": ["node_modules", "dist", "src/generated/prisma"]
+}
