@@ -1,0 +1,9 @@
+# Commits listed here are skipped by `git blame` so bulk, no-logic changes don't
+# obscure the real authorship of each line.
+#
+# Enable locally with:
+#   git config blame.ignoreRevsFile .git-blame-ignore-revs
+# GitHub applies this file automatically in its blame view.
+
+# Apply Prettier formatting across the codebase (whitespace-only reformat)
+d15c4859c26f5e54be53d0b46bf9fbdf432bd18c
