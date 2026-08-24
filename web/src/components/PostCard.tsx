@@ -1,8 +1,8 @@
+import { Link } from 'react-router';
 import type { Post } from '../types';
 
 // A "presentational" component: hand it one post, it renders that post's card. It holds no state and
-// fetches nothing — it just displays what it's given. Keeping display components dumb like this (data
-// fetched high up, passed down as props) is the core React composition pattern.
+// fetches nothing — it just displays what it's given, and links to the post and its community.
 
 // Props are a component's inputs — the equivalent of function parameters. We describe them with a
 // TypeScript interface so a caller can't forget `post` or pass the wrong shape.
@@ -14,9 +14,12 @@ interface PostCardProps {
 function PostCard({ post }: PostCardProps) {
     return (
         <article className="post-card">
-            <h2 className="post-title">{post.title}</h2>
+            <h2 className="post-title">
+                <Link to={`/posts/${post.id}`}>{post.title}</Link>
+            </h2>
             <p className="post-meta">
-                {post.community.name} · by {post.author.username}
+                <Link to={`/communities/${post.community.id}`}>{post.community.name}</Link> · by{' '}
+                {post.author.username}
             </p>
             <p className="post-content">{post.content}</p>
             <p className="post-stats">

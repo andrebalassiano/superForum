@@ -1,50 +1,33 @@
-import { useEffect, useState } from 'react';
-import type { Post } from './types';
-import PostCard from './components/PostCard';
+import { Routes, Route, Link } from 'react-router';
+import FeedPage from './pages/FeedPage';
+import PostPage from './pages/PostPage';
+import CommunityPage from './pages/CommunityPage';
 import './App.css';
 
-// Where the backend lives. Hardcoded for now — we'll move it to a Vite env var in a later step.
-const API_URL = 'http://localhost:3000/api';
-
+// App is now a "shell": a header that shows on every page, plus a <Routes> block that swaps the
+// page component based on the current URL. The pages themselves do the data-fetching.
 function App() {
-    // Three pieces of state that together describe "loading data from a server": the data itself,
-    // whether we're still waiting, and any error. (Step 5 replaces all of this with TanStack Query.)
-    const [posts, setPosts] = useState<Post[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
-
-    // useEffect runs a side-effect AFTER the first render. The empty dependency array [] means "run
-    // once, on mount" — so we fetch exactly once, not on every re-render.
-    useEffect(() => {
-        fetch(`${API_URL}/posts`)
-            .then((res) => {
-                if (!res.ok) throw new Error(`Request failed (${res.status})`);
-                return res.json();
-            })
-            .then((data) => {
-                // GET /posts returns the { items, nextCursor } envelope — the posts are in `items`.
-                setPosts(data.items);
-            })
-            .catch((err: unknown) => {
-                setError(err instanceof Error ? err.message : 'Unknown error');
-            })
-            .finally(() => setLoading(false));
-    }, []);
-
-    // Early returns keep the main JSX clean — we show one of these while loading or on failure.
-    if (loading) return <p className="status">Loading posts…</p>;
-    if (error) return <p className="status">Could not load posts: {error}</p>;
-
     return (
-        <main className="feed">
-            <h1>superForum</h1>
-            {posts.length === 0 ? (
-                <p className="status">No posts yet.</p>
-            ) : (
-                // `key` gives React a stable identity per row so it updates the list efficiently.
-                posts.map((post) => <PostCard key={post.id} post={post} />)
-            )}
-        </main>
+        <div className="app">
+            <header className="app-header">
+                {/* <Link> renders an <a>, but navigating with it does NOT reload the page — the
+                    router intercepts the click and swaps the view in place. That's the SPA
+                    difference from a plain <a href>. */}
+                <Link to="/" className="app-title">
+                    superForum
+                </Link>
+            </header>
+
+            <main className="app-main">
+                {/* Routes compares the URL to each Route's path and renders the first match.
+                    ":id" is a URL parameter the matched page reads back with useParams(). */}
+                <Routes>
+                    <Route path="/" element={<FeedPage />} />
+                    <Route path="/posts/:id" element={<PostPage />} />
+                    <Route path="/communities/:id" element={<CommunityPage />} />
+                </Routes>
+            </main>
+        </div>
     );
 }
 
