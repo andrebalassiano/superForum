@@ -1,122 +1,51 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import heroImg from './assets/hero.png'
-import './App.css'
+import { useEffect, useState } from 'react';
+import type { Post } from './types';
+import PostCard from './components/PostCard';
+import './App.css';
+
+// Where the backend lives. Hardcoded for now — we'll move it to a Vite env var in a later step.
+const API_URL = 'http://localhost:3000/api';
 
 function App() {
-  const [count, setCount] = useState(0)
+    // Three pieces of state that together describe "loading data from a server": the data itself,
+    // whether we're still waiting, and any error. (Step 5 replaces all of this with TanStack Query.)
+    const [posts, setPosts] = useState<Post[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
 
-  return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Frontend time!</h1>
-          <p>
-            Edit <code>src/App.tsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
+    // useEffect runs a side-effect AFTER the first render. The empty dependency array [] means "run
+    // once, on mount" — so we fetch exactly once, not on every re-render.
+    useEffect(() => {
+        fetch(`${API_URL}/posts`)
+            .then((res) => {
+                if (!res.ok) throw new Error(`Request failed (${res.status})`);
+                return res.json();
+            })
+            .then((data) => {
+                // GET /posts returns the { items, nextCursor } envelope — the posts are in `items`.
+                setPosts(data.items);
+            })
+            .catch((err: unknown) => {
+                setError(err instanceof Error ? err.message : 'Unknown error');
+            })
+            .finally(() => setLoading(false));
+    }, []);
 
-      <div className="ticks"></div>
+    // Early returns keep the main JSX clean — we show one of these while loading or on failure.
+    if (loading) return <p className="status">Loading posts…</p>;
+    if (error) return <p className="status">Could not load posts: {error}</p>;
 
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
-
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
-  )
+    return (
+        <main className="feed">
+            <h1>superForum</h1>
+            {posts.length === 0 ? (
+                <p className="status">No posts yet.</p>
+            ) : (
+                // `key` gives React a stable identity per row so it updates the list efficiently.
+                posts.map((post) => <PostCard key={post.id} post={post} />)
+            )}
+        </main>
+    );
 }
 
-export default App
+export default App;
