@@ -6,7 +6,9 @@ import globals from 'globals';
 export default tseslint.config(
     // Never lint generated or build output. The Prisma client alone is ~14k lines of machine
     // output, and dist/coverage are artifacts.
-    { ignores: ['src/generated/**', 'dist/**', 'coverage/**'] },
+    // web/ is a self-contained frontend project with its own toolchain (its own tsconfig, its own
+    // linter). The backend's type-aware ESLint must not reach into it.
+    { ignores: ['src/generated/**', 'dist/**', 'coverage/**', 'web/**'] },
 
     // Baseline JS rules everywhere.
     js.configs.recommended,

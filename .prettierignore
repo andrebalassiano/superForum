@@ -13,3 +13,6 @@ package-lock.json
 
 # Postman's own export format (2-space); formatting it would churn every re-export
 postman
+
+# The frontend is a self-contained project with its own formatting toolchain
+web
