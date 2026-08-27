@@ -1,37 +1,28 @@
-import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router';
-import { API_URL } from '../api';
+import { useQuery } from '@tanstack/react-query';
+import { apiFetch } from '../api';
 import type { Post } from '../types';
 
-// A single post at /posts/:id. This is where useParams earns its keep.
+// A single post at /posts/:id.
 function PostPage() {
-    // useParams reads the dynamic segments of the URL. Our route is "/posts/:id", so we get { id }.
-    // It's typed string | undefined — the router can't statically prove the segment is present.
     const { id } = useParams();
 
-    const [post, setPost] = useState<Post | null>(null);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
+    // The queryKey includes `id`, so each post is cached under its own key. Navigating between posts
+    // fetches (and caches) each; revisiting one shows the cached copy instantly. No [id] dependency
+    // array to remember — the queryKey changing is what drives the refetch.
+    const {
+        data: post,
+        isPending,
+        isError,
+        error,
+    } = useQuery({
+        queryKey: ['post', id],
+        queryFn: () => apiFetch<Post>(`/posts/${id}`),
+    });
 
-    // `id` is in the dependency array: navigating from one post straight to another reuses this
-    // component (no unmount), so the effect must re-run when the id changes to fetch the new post.
-    useEffect(() => {
-        fetch(`${API_URL}/posts/${id}`)
-            .then((res) => {
-                if (res.status === 404) throw new Error('Post not found');
-                if (!res.ok) throw new Error(`Request failed (${res.status})`);
-                return res.json();
-            })
-            .then((data) => setPost(data)) // GET /posts/:id returns the post directly, not an envelope
-            .catch((err: unknown) => {
-                setError(err instanceof Error ? err.message : 'Unknown error');
-            })
-            .finally(() => setLoading(false));
-    }, [id]);
-
-    if (loading) return <p className="status">Loading post...</p>;
-    if (error) return <p className="status">Could not load post: {error}</p>;
-    if (!post) return null;
+    if (isPending) return <p className="status">Loading post...</p>;
+    // On a 404 the backend's envelope message ("Post not found") flows through apiFetch to here.
+    if (isError) return <p className="status">Could not load post: {error.message}</p>;
 
     return (
         <article className="post-detail">

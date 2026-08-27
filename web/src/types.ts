@@ -15,3 +15,10 @@ export interface Post {
     _count: { comments: number };
     currentUserVote: number | null;
 }
+
+// The cursor-pagination envelope every list endpoint returns. Generic so it works for any row type
+// (Post today, comments later): `Page<Post>` is { items: Post[]; nextCursor: string | null }.
+export interface Page<T> {
+    items: T[];
+    nextCursor: string | null;
+}

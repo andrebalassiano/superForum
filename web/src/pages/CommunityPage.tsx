@@ -1,37 +1,23 @@
-import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router';
-import { API_URL } from '../api';
-import type { Post } from '../types';
+import { useQuery } from '@tanstack/react-query';
+import { apiFetch } from '../api';
+import type { Page, Post } from '../types';
 import PostCard from '../components/PostCard';
 
-// One community's posts at /communities/:id — hits GET /communities/:id/posts, the endpoint you
-// promoted from dead code back in the backend #5 work. Reuses PostCard, same as the feed.
+// One community's posts at /communities/:id — hits GET /communities/:id/posts.
 function CommunityPage() {
     const { id } = useParams();
 
-    const [posts, setPosts] = useState<Post[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
+    const { data, isPending, isError, error } = useQuery({
+        queryKey: ['community', id, 'posts'],
+        queryFn: () => apiFetch<Page<Post>>(`/communities/${id}/posts`),
+    });
 
-    useEffect(() => {
-        fetch(`${API_URL}/communities/${id}/posts`)
-            .then((res) => {
-                if (!res.ok) throw new Error(`Request failed (${res.status})`);
-                return res.json();
-            })
-            .then((data) => setPosts(data.items))
-            .catch((err: unknown) => {
-                setError(err instanceof Error ? err.message : 'Unknown error');
-            })
-            .finally(() => setLoading(false));
-    }, [id]);
+    if (isPending) return <p className="status">Loading community...</p>;
+    if (isError) return <p className="status">Could not load community: {error.message}</p>;
 
-    if (loading) return <p className="status">Loading community...</p>;
-    if (error) return <p className="status">Could not load community: {error}</p>;
-
-    // The community's name rides along on each post (post.community.name). Read it off the first one,
-    // falling back to a generic heading when the community has no posts yet.
-    const communityName = posts[0]?.community.name ?? 'Community';
+    // The community's name rides along on each post; read it off the first, or fall back.
+    const communityName = data.items[0]?.community.name ?? 'Community';
 
     return (
         <div className="feed">
@@ -39,10 +25,10 @@ function CommunityPage() {
                 &larr; Back to feed
             </Link>
             <h1>{communityName}</h1>
-            {posts.length === 0 ? (
+            {data.items.length === 0 ? (
                 <p className="status">No posts in this community yet.</p>
             ) : (
-                posts.map((post) => <PostCard key={post.id} post={post} />)
+                data.items.map((post) => <PostCard key={post.id} post={post} />)
             )}
         </div>
     );
