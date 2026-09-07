@@ -53,9 +53,35 @@
 }
 
 .app-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
     border-bottom: 1px solid var(--border);
     padding: 16px;
     margin-bottom: 8px;
+}
+
+.app-nav {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 14px;
+}
+.app-nav a {
+    color: var(--accent);
+    text-decoration: none;
+}
+.app-user {
+    color: var(--text);
+}
+.app-nav button {
+    padding: 4px 10px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: none;
+    color: var(--text-h);
+    cursor: pointer;
+    font-size: 14px;
 }
 
 .app-title {
@@ -101,4 +127,52 @@
 .post-detail h1 {
     font-size: 28px;
     margin: 8px 0;
+}
+
+.auth {
+    max-width: 360px;
+    margin: 32px auto;
+    padding: 0 16px;
+}
+.auth-form {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 16px;
+}
+.auth-form label {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-size: 14px;
+    color: var(--text);
+}
+.auth-form input {
+    padding: 8px 10px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--bg);
+    color: var(--text-h);
+    font-size: 15px;
+}
+.auth-form button {
+    padding: 8px 12px;
+    border-radius: 6px;
+    background: var(--accent-bg);
+    color: var(--accent);
+    border: 1px solid var(--accent-border);
+    cursor: pointer;
+}
+.auth-toggle {
+    margin-top: 12px;
+    padding: 4px;
+    background: none;
+    border: none;
+    color: var(--accent);
+    cursor: pointer;
+    font-size: 14px;
+}
+.auth-error {
+    color: #e5484d;
+    font-size: 14px;
 }

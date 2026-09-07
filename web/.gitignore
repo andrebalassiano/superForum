@@ -22,3 +22,8 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Local env files — real Supabase values live here, never committed (.env.example is the template)
+.env
+.env.*
+!.env.example
