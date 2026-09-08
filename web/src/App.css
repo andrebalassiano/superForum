@@ -183,3 +183,23 @@
 .your-vote.down {
     color: #e5484d;
 }
+
+.load-more {
+    display: block;
+    width: 100%;
+    padding: 10px;
+    margin-top: 8px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: none;
+    color: var(--accent);
+    cursor: pointer;
+    font-size: 15px;
+}
+.load-more:hover:not(:disabled) {
+    background: var(--accent-bg);
+}
+.load-more:disabled {
+    cursor: default;
+    color: var(--text);
+}

@@ -4,6 +4,10 @@ import { supabase } from './lib/supabase';
 // Vite env var (import.meta.env) so dev and production can point at different backends.
 export const API_URL = 'http://localhost:3000/api';
 
+// How many posts each feed page requests. Deliberately small so "Load more" is visible without
+// needing hundreds of posts; a real feed would use something larger (the backend caps limit at 100).
+export const PAGE_SIZE = 5;
+
 // One choke point for every API call — the frontend mirror of the backend's middleware layer. It
 // attaches the signed-in user's JWT, prefixes the base URL, checks the response, unwraps the
 // backend's { error: { message } } envelope into a thrown Error, and returns parsed JSON.
