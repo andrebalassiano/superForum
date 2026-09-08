@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import type { Session, User } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 
@@ -21,6 +22,7 @@ const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 export function AuthProvider({ children }: { children: ReactNode }) {
     const [session, setSession] = useState<Session | null>(null);
     const [loading, setLoading] = useState(true);
+    const queryClient = useQueryClient();
 
     useEffect(() => {
         // On mount, ask Supabase for any persisted session (it survives reloads via localStorage),
@@ -30,13 +32,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             setLoading(false);
         });
 
-        const { data: sub } = supabase.auth.onAuthStateChange((_event, newSession) => {
+        const { data: sub } = supabase.auth.onAuthStateChange((event, newSession) => {
             setSession(newSession);
+
+            // When the identity actually changes, the cached queries were fetched under the old
+            // token — invalidate them so they refetch and personalized fields (currentUserVote)
+            // reflect who's now signed in (or out). We skip TOKEN_REFRESHED / INITIAL_SESSION,
+            // which don't change who the user is.
+            if (event === 'SIGNED_IN' || event === 'SIGNED_OUT') {
+                void queryClient.invalidateQueries();
+            }
         });
 
         // Unsubscribe when the provider unmounts, so we don't leak the listener.
         return () => sub.subscription.unsubscribe();
-    }, []);
+    }, [queryClient]);
 
     // Each action throws on failure so the caller (the login form) can surface the message.
     async function signIn(email: string, password: string) {

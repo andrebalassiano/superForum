@@ -24,6 +24,13 @@ function PostCard({ post }: PostCardProps) {
             <p className="post-content">{post.content}</p>
             <p className="post-stats">
                 {post.score} points · {post._count.comments} comments
+                {/* currentUserVote is null for anonymous readers; the backend fills it in once the
+                    request carries a token — so this indicator only appears when you're signed in
+                    and have voted on this post. */}
+                {post.currentUserVote === 1 && <span className="your-vote up"> · you upvoted</span>}
+                {post.currentUserVote === -1 && (
+                    <span className="your-vote down"> · you downvoted</span>
+                )}
             </p>
         </article>
     );

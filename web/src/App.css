@@ -176,3 +176,10 @@
     color: #e5484d;
     font-size: 14px;
 }
+
+.your-vote.up {
+    color: #30a46c;
+}
+.your-vote.down {
+    color: #e5484d;
+}

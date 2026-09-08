@@ -37,6 +37,10 @@ function PostPage() {
             <p className="post-content">{post.content}</p>
             <p className="post-stats">
                 {post.score} points · {post._count.comments} comments
+                {post.currentUserVote === 1 && <span className="your-vote up"> · you upvoted</span>}
+                {post.currentUserVote === -1 && (
+                    <span className="your-vote down"> · you downvoted</span>
+                )}
             </p>
         </article>
     );

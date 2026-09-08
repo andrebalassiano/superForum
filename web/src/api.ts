@@ -1,13 +1,22 @@
+import { supabase } from './lib/supabase';
+
 // The base URL of the backend, in one place. Still a literal for now; a later step moves it to a
 // Vite env var (import.meta.env) so dev and production can point at different backends.
 export const API_URL = 'http://localhost:3000/api';
 
 // One choke point for every API call — the frontend mirror of the backend's middleware layer. It
-// prefixes the base URL, checks the response, unwraps the backend's { error: { message } } envelope
-// into a real thrown Error, and returns parsed JSON. TanStack Query's queryFns call this, and Query
-// turns a thrown error into the query's `error` state.
+// attaches the signed-in user's JWT, prefixes the base URL, checks the response, unwraps the
+// backend's { error: { message } } envelope into a thrown Error, and returns parsed JSON.
 export async function apiFetch<T>(path: string): Promise<T> {
-    const res = await fetch(`${API_URL}${path}`);
+    // Grab the current session's access token (the JWT). getSession reads the cached session and
+    // refreshes the token if it's expired, so requests always carry a valid one — or none, when the
+    // user is anonymous, which the backend's optionalAuth handles gracefully.
+    const { data } = await supabase.auth.getSession();
+    const token = data.session?.access_token;
+
+    const res = await fetch(`${API_URL}${path}`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
 
     if (!res.ok) {
         // Prefer the backend's own message (that consistent error envelope paying off); fall back
