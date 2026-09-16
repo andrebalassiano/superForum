@@ -4,22 +4,31 @@ import { supabase } from './lib/supabase';
 // Vite env var (import.meta.env) so dev and production can point at different backends.
 export const API_URL = 'http://localhost:3000/api';
 
-// How many posts each feed page requests. Deliberately small so "Load more" is visible without
+// How many posts each feed page requests. Deliberately small so pagination is visible without
 // needing hundreds of posts; a real feed would use something larger (the backend caps limit at 100).
 export const PAGE_SIZE = 5;
 
 // One choke point for every API call — the frontend mirror of the backend's middleware layer. It
-// attaches the signed-in user's JWT, prefixes the base URL, checks the response, unwraps the
-// backend's { error: { message } } envelope into a thrown Error, and returns parsed JSON.
-export async function apiFetch<T>(path: string): Promise<T> {
+// attaches the signed-in user's JWT, sets the method/body for writes, checks the response, unwraps
+// the backend's { error: { message } } envelope into a thrown Error, and returns parsed JSON.
+export async function apiFetch<T>(
+    path: string,
+    options?: { method?: string; body?: unknown },
+): Promise<T> {
     // Grab the current session's access token (the JWT). getSession reads the cached session and
     // refreshes the token if it's expired, so requests always carry a valid one — or none, when the
     // user is anonymous, which the backend's optionalAuth handles gracefully.
     const { data } = await supabase.auth.getSession();
     const token = data.session?.access_token;
 
+    const headers: Record<string, string> = {};
+    if (token) headers.Authorization = `Bearer ${token}`;
+    if (options?.body !== undefined) headers['Content-Type'] = 'application/json';
+
     const res = await fetch(`${API_URL}${path}`, {
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        method: options?.method ?? 'GET',
+        headers,
+        body: options?.body !== undefined ? JSON.stringify(options.body) : undefined,
     });
 
     if (!res.ok) {
@@ -35,5 +44,7 @@ export async function apiFetch<T>(path: string): Promise<T> {
         throw new Error(message);
     }
 
+    // 204 No Content (e.g. a successful DELETE vote) has no body to parse.
+    if (res.status === 204) return undefined as T;
     return res.json() as Promise<T>;
 }

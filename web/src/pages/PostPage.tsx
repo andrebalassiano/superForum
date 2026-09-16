@@ -2,6 +2,7 @@ import { useParams, Link } from 'react-router';
 import { useQuery } from '@tanstack/react-query';
 import { apiFetch } from '../api';
 import type { Post } from '../types';
+import VoteButtons from '../components/VoteButtons';
 
 // A single post at /posts/:id.
 function PostPage() {
@@ -35,13 +36,10 @@ function PostPage() {
                 {post.author.username}
             </p>
             <p className="post-content">{post.content}</p>
-            <p className="post-stats">
-                {post.score} points · {post._count.comments} comments
-                {post.currentUserVote === 1 && <span className="your-vote up"> · you upvoted</span>}
-                {post.currentUserVote === -1 && (
-                    <span className="your-vote down"> · you downvoted</span>
-                )}
-            </p>
+            <div className="post-footer">
+                <VoteButtons post={post} />
+                <span className="post-comments">{post._count.comments} comments</span>
+            </div>
         </article>
     );
 }

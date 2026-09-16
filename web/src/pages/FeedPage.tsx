@@ -2,6 +2,7 @@ import { useInfiniteQuery } from '@tanstack/react-query';
 import { apiFetch, PAGE_SIZE } from '../api';
 import type { Page, Post } from '../types';
 import PostCard from '../components/PostCard';
+import { useInfiniteScroll } from '../hooks/useInfiniteScroll';
 
 // The home feed, now paginated. useInfiniteQuery is useQuery's sibling for "load more" data: instead
 // of one result it keeps an array of pages, and knows how to fetch the next one.
@@ -22,6 +23,13 @@ function FeedPage() {
             getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined,
         });
 
+    // Attach this ref to the sentinel below; when it scrolls into view the next page auto-loads.
+    // Hooks must run before any early return, so this sits above the loading/error guards.
+    const sentinelRef = useInfiniteScroll(
+        () => void fetchNextPage(),
+        hasNextPage && !isFetchingNextPage,
+    );
+
     if (isPending) return <p className="status">Loading posts...</p>;
     if (isError) return <p className="status">Could not load posts: {error.message}</p>;
 
@@ -36,17 +44,12 @@ function FeedPage() {
                 <PostCard key={post.id} post={post} />
             ))}
 
-            {/* Only render "Load more" while there's another page. fetchNextPage appends the next
-                page to data.pages; isFetchingNextPage guards against double-clicks. */}
+            {/* The sentinel: rendered only while another page exists. When it enters the viewport,
+                the hook fires fetchNextPage, which appends the next page to data.pages. */}
             {hasNextPage && (
-                <button
-                    type="button"
-                    className="load-more"
-                    onClick={() => void fetchNextPage()}
-                    disabled={isFetchingNextPage}
-                >
-                    {isFetchingNextPage ? 'Loading...' : 'Load more'}
-                </button>
+                <div ref={sentinelRef} className="load-more-sentinel">
+                    {isFetchingNextPage ? 'Loading more...' : ''}
+                </div>
             )}
         </div>
     );

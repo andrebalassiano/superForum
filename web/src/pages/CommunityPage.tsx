@@ -3,6 +3,7 @@ import { useInfiniteQuery } from '@tanstack/react-query';
 import { apiFetch, PAGE_SIZE } from '../api';
 import type { Page, Post } from '../types';
 import PostCard from '../components/PostCard';
+import { useInfiniteScroll } from '../hooks/useInfiniteScroll';
 
 // One community's posts at /communities/:id — same paginated pattern as the home feed, scoped to
 // GET /communities/:id/posts.
@@ -20,6 +21,11 @@ function CommunityPage() {
             initialPageParam: '',
             getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined,
         });
+
+    const sentinelRef = useInfiniteScroll(
+        () => void fetchNextPage(),
+        hasNextPage && !isFetchingNextPage,
+    );
 
     if (isPending) return <p className="status">Loading community...</p>;
     if (isError) return <p className="status">Could not load community: {error.message}</p>;
@@ -43,14 +49,9 @@ function CommunityPage() {
                         <PostCard key={post.id} post={post} />
                     ))}
                     {hasNextPage && (
-                        <button
-                            type="button"
-                            className="load-more"
-                            onClick={() => void fetchNextPage()}
-                            disabled={isFetchingNextPage}
-                        >
-                            {isFetchingNextPage ? 'Loading...' : 'Load more'}
-                        </button>
+                        <div ref={sentinelRef} className="load-more-sentinel">
+                            {isFetchingNextPage ? 'Loading more...' : ''}
+                        </div>
                     )}
                 </>
             )}
