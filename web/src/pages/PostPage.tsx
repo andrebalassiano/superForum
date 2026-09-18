@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { apiFetch } from '../api';
 import type { Post } from '../types';
 import VoteButtons from '../components/VoteButtons';
+import Comments from '../components/Comments';
 
 // A single post at /posts/:id.
 function PostPage() {
@@ -26,21 +27,25 @@ function PostPage() {
     if (isError) return <p className="status">Could not load post: {error.message}</p>;
 
     return (
-        <article className="post-detail">
-            <Link to="/" className="back-link">
-                &larr; Back to feed
-            </Link>
-            <h1>{post.title}</h1>
-            <p className="post-meta">
-                <Link to={`/communities/${post.community.id}`}>{post.community.name}</Link> · by{' '}
-                {post.author.username}
-            </p>
-            <p className="post-content">{post.content}</p>
-            <div className="post-footer">
-                <VoteButtons post={post} />
-                <span className="post-comments">{post._count.comments} comments</span>
-            </div>
-        </article>
+        <>
+            <article className="post-detail">
+                <Link to="/" className="back-link">
+                    &larr; Back to feed
+                </Link>
+                <h1>{post.title}</h1>
+                <p className="post-meta">
+                    <Link to={`/communities/${post.community.id}`}>{post.community.name}</Link> · by{' '}
+                    {post.author.username}
+                </p>
+                <p className="post-content">{post.content}</p>
+                <div className="post-footer">
+                    <VoteButtons post={post} />
+                    <span className="post-comments">{post._count.comments} comments</span>
+                </div>
+            </article>
+
+            <Comments postId={post.id} />
+        </>
     );
 }
 

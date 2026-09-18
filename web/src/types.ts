@@ -16,8 +16,19 @@ export interface Post {
     currentUserVote: number | null;
 }
 
-// The cursor-pagination envelope every list endpoint returns. Generic so it works for any row type
-// (Post today, comments later): `Page<Post>` is { items: Post[]; nextCursor: string | null }.
+// One comment as GET /posts/:postId/comments returns it. Like posts, the backend folds the caller's
+// vote into currentUserVote and (as of the 9b backend tweak) includes the author's username.
+export interface Comment {
+    id: string;
+    content: string;
+    score: number;
+    createdAt: string;
+    author: { username: string };
+    currentUserVote: number | null;
+}
+
+// The cursor-pagination envelope every list endpoint returns. Generic so it works for any row type:
+// `Page<Post>` is { items: Post[]; nextCursor: string | null }, `Page<Comment>` likewise.
 export interface Page<T> {
     items: T[];
     nextCursor: string | null;
