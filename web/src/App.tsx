@@ -4,6 +4,7 @@ import FeedPage from './pages/FeedPage';
 import PostPage from './pages/PostPage';
 import CommunityPage from './pages/CommunityPage';
 import LoginPage from './pages/LoginPage';
+import NewPostPage from './pages/NewPostPage';
 import './App.css';
 
 // App is the shell: a header on every page plus a <Routes> block that swaps the page by URL.
@@ -24,6 +25,9 @@ function App() {
                 <nav className="app-nav">
                     {user ? (
                         <>
+                            <Link to="/submit" className="app-new-post">
+                                New post
+                            </Link>
                             <span className="app-user">{user.email}</span>
                             <button type="button" onClick={() => void signOut()}>
                                 Sign out
@@ -41,6 +45,7 @@ function App() {
                     <Route path="/posts/:id" element={<PostPage />} />
                     <Route path="/communities/:id" element={<CommunityPage />} />
                     <Route path="/login" element={<LoginPage />} />
+                    <Route path="/submit" element={<NewPostPage />} />
                 </Routes>
             </main>
         </div>

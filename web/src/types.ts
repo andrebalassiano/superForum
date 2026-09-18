@@ -27,6 +27,12 @@ export interface Comment {
     currentUserVote: number | null;
 }
 
+// A community, as GET /communities returns it — just what the "new post" picker needs.
+export interface Community {
+    id: string;
+    name: string;
+}
+
 // The cursor-pagination envelope every list endpoint returns. Generic so it works for any row type:
 // `Page<Post>` is { items: Post[]; nextCursor: string | null }, `Page<Comment>` likewise.
 export interface Page<T> {

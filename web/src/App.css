@@ -74,6 +74,9 @@
 .app-user {
     color: var(--text);
 }
+.app-new-post {
+    font-weight: 500;
+}
 .app-nav button {
     padding: 4px 10px;
     border-radius: 6px;
@@ -280,6 +283,55 @@
     color: var(--text-h);
     margin: 0;
     white-space: pre-wrap;
+}
+
+.new-post {
+    max-width: 560px;
+    margin: 24px auto;
+    padding: 0 16px;
+}
+.new-post h1 {
+    font-size: 28px;
+    margin: 8px 0 16px;
+}
+.new-post-form {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+.new-post-form label {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-size: 14px;
+    color: var(--text);
+}
+.new-post-form input,
+.new-post-form select,
+.new-post-form textarea {
+    padding: 8px 10px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--bg);
+    color: var(--text-h);
+    font-size: 15px;
+    font-family: inherit;
+}
+.new-post-form textarea {
+    resize: vertical;
+}
+.new-post-form button {
+    align-self: flex-start;
+    padding: 8px 16px;
+    border-radius: 6px;
+    background: var(--accent-bg);
+    color: var(--accent);
+    border: 1px solid var(--accent-border);
+    cursor: pointer;
+}
+.new-post-form button:disabled {
+    opacity: 0.5;
+    cursor: default;
 }
 
 .load-more-sentinel {
