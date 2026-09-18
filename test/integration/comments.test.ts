@@ -86,6 +86,7 @@ describe('comments: reads', () => {
         const res = await request(app).get(`/api/comments/${comment.id}`);
         expect(res.status).toBe(200);
         expect(res.body.id).toBe(comment.id);
+        expect(res.body.author.username).toBe('alice');
     });
 
     it('GET /api/comments/:id returns 404 for a missing comment', async () => {
@@ -101,6 +102,11 @@ describe('comments: reads', () => {
         expect(res.status).toBe(200);
         expect(res.body.items).toHaveLength(2);
         expect(res.body.nextCursor).toBeNull();
+        // each comment carries its author's username (the frontend needs it to render the thread)
+        const usernames = res.body.items.map(
+            (c: { author: { username: string } }) => c.author.username,
+        );
+        expect(new Set(usernames)).toEqual(new Set(['alice', 'bob']));
     });
 
     it('nested list returns an empty page (200) when the post has no comments', async () => {

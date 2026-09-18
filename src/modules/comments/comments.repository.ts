@@ -14,9 +14,10 @@ const commentsRepository = {
     async findById(where: Prisma.CommentWhereUniqueInput, userId?: string) {
         return prisma.comment.findUnique({
             where,
-            ...(userId
-                ? { include: { votes: { where: { userId }, select: { value: true } } } }
-                : {}),
+            include: {
+                author: { select: { username: true } },
+                ...(userId ? { votes: { where: { userId }, select: { value: true } } } : {}),
+            },
         });
     },
 
@@ -31,9 +32,10 @@ const commentsRepository = {
             },
             take: limit + 1,
             ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
-            ...(userId
-                ? { include: { votes: { where: { userId }, select: { value: true } } } }
-                : {}),
+            include: {
+                author: { select: { username: true } },
+                ...(userId ? { votes: { where: { userId }, select: { value: true } } } : {}),
+            },
             orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
         });
     },

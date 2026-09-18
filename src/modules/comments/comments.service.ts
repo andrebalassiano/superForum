@@ -58,7 +58,7 @@ const commentsService = {
         const comment = await commentsRepository.findById({ id }, userId);
         if (!comment) return null;
 
-        const { votes, ...rest } = comment as typeof comment & { votes?: { value: number }[] };
+        const { votes, ...rest } = comment;
         return { ...rest, currentUserVote: votes?.[0]?.value ?? null };
     },
 
@@ -73,7 +73,7 @@ const commentsService = {
         const { items, nextCursor } = buildPage(rows, pagination.limit);
 
         const comments = items.map((comment) => {
-            const { votes, ...rest } = comment as typeof comment & { votes?: { value: number }[] };
+            const { votes, ...rest } = comment;
             return { ...rest, currentUserVote: votes?.[0]?.value ?? null };
         });
 
