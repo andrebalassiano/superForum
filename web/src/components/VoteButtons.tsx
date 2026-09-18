@@ -6,6 +6,7 @@ import {
 } from '@tanstack/react-query';
 import { apiFetch } from '../api';
 import { useAuth } from '../auth/AuthContext';
+import { Thumb } from './icons';
 import type { Page, Post } from '../types';
 
 interface VoteButtonsProps {
@@ -32,28 +33,25 @@ function patchPostInCaches(queryClient: QueryClient, postId: string, patch: (p: 
     );
 }
 
+// A horizontal pill (Reddit-style): thumb-up, score, thumb-down. The active vote is shown by a FILLED
+// thumb in the strong text color; the inactive ones are outlined and muted. No red/green.
 function VoteButtons({ post }: VoteButtonsProps) {
     const { user } = useAuth();
     const queryClient = useQueryClient();
 
     const mutation = useMutation({
-        // Toggle semantics: clicking your current vote again removes it (DELETE); otherwise set it.
         mutationFn: (dir: 1 | -1) =>
             post.currentUserVote === dir
                 ? apiFetch(`/posts/${post.id}/vote`, { method: 'DELETE' })
                 : apiFetch(`/posts/${post.id}/vote`, { method: 'PUT', body: { value: dir } }),
 
-        // onMutate runs BEFORE the request — this is the optimistic update.
         onMutate: async (dir: 1 | -1) => {
-            // Stop in-flight refetches so they can't clobber our optimistic patch mid-request.
             await queryClient.cancelQueries();
 
             const removing = post.currentUserVote === dir;
             const newVote = removing ? null : dir;
-            // The same delta the backend applies: increment score by (newValue - oldValue).
             const scoreDelta = removing ? -dir : dir - (post.currentUserVote ?? 0);
 
-            // Snapshot the caches we're about to change, so onError can restore them exactly.
             const previousDetail = queryClient.getQueryData<Post>(['post', post.id]);
             const previousLists = queryClient.getQueriesData<InfiniteData<Page<Post>>>({
                 predicate: (q) => q.queryKey[0] === 'posts' || q.queryKey[0] === 'community',
@@ -65,44 +63,48 @@ function VoteButtons({ post }: VoteButtonsProps) {
                 score: p.score + scoreDelta,
             }));
 
-            // Whatever we return here is passed to onError as `context`.
             return { previousDetail, previousLists };
         },
 
-        // If the request fails, put the caches back exactly as they were.
         onError: (_err, _dir, context) => {
             if (!context) return;
             queryClient.setQueryData(['post', post.id], context.previousDetail);
             context.previousLists.forEach(([key, data]) => queryClient.setQueryData(key, data));
         },
-        // No onSuccess refetch needed: our optimistic delta matches the backend's exactly, so the
-        // cache is already correct once the request succeeds.
     });
 
     const cv = post.currentUserVote;
+    const iconButton =
+        'rounded-full p-1.5 disabled:cursor-default disabled:opacity-50 enabled:cursor-pointer enabled:hover:text-heading';
 
     return (
-        <div className="votes">
+        <div className="inline-flex items-center gap-1 rounded-full bg-surface px-1">
             <button
                 type="button"
-                className={cv === 1 ? 'vote up active' : 'vote up'}
                 onClick={() => mutation.mutate(1)}
                 disabled={!user || mutation.isPending}
                 title={user ? 'Upvote' : 'Sign in to vote'}
                 aria-label="Upvote"
+                aria-pressed={cv === 1}
+                className={`${iconButton} ${cv === 1 ? 'text-heading' : 'text-muted'}`}
             >
-                ▲
+                <Thumb filled={cv === 1} />
             </button>
-            <span className="vote-score">{post.score}</span>
+
+            <span className="min-w-6 text-center text-sm font-semibold text-heading">
+                {post.score}
+            </span>
+
             <button
                 type="button"
-                className={cv === -1 ? 'vote down active' : 'vote down'}
                 onClick={() => mutation.mutate(-1)}
                 disabled={!user || mutation.isPending}
                 title={user ? 'Downvote' : 'Sign in to vote'}
                 aria-label="Downvote"
+                aria-pressed={cv === -1}
+                className={`${iconButton} ${cv === -1 ? 'text-heading' : 'text-muted'}`}
             >
-                ▼
+                <Thumb filled={cv === -1} down />
             </button>
         </div>
     );

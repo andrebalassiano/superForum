@@ -4,14 +4,13 @@ import { apiFetch } from '../api';
 import type { Post } from '../types';
 import VoteButtons from '../components/VoteButtons';
 import Comments from '../components/Comments';
+import { CommentIcon } from '../components/icons';
+import { timeAgo } from '../lib/time';
 
-// A single post at /posts/:id.
+// A single post at /posts/:id — the post (same layout as a feed card, full content) then its thread.
 function PostPage() {
     const { id } = useParams();
 
-    // The queryKey includes `id`, so each post is cached under its own key. Navigating between posts
-    // fetches (and caches) each; revisiting one shows the cached copy instantly. No [id] dependency
-    // array to remember — the queryKey changing is what drives the refetch.
     const {
         data: post,
         isPending,
@@ -23,26 +22,40 @@ function PostPage() {
     });
 
     if (isPending) return <p className="status">Loading post...</p>;
-    // On a 404 the backend's envelope message ("Post not found") flows through apiFetch to here.
     if (isError) return <p className="status">Could not load post: {error.message}</p>;
 
     return (
         <>
-            <article className="post-detail">
-                <Link to="/" className="back-link">
+            <div className="pt-2 pb-8">
+                <Link
+                    to="/"
+                    className="mb-3 inline-block text-sm text-accent no-underline hover:underline"
+                >
                     &larr; Back to feed
                 </Link>
-                <h1>{post.title}</h1>
-                <p className="post-meta">
-                    <Link to={`/communities/${post.community.id}`}>{post.community.name}</Link> · by{' '}
-                    {post.author.username}
+
+                <p className="mb-1 text-xs text-muted">
+                    <Link
+                        to={`/communities/${post.community.id}`}
+                        className="font-medium text-heading no-underline hover:underline"
+                    >
+                        {post.community.name}
+                    </Link>{' '}
+                    · by {post.author.username} · {timeAgo(post.createdAt)}
                 </p>
-                <p className="post-content">{post.content}</p>
-                <div className="post-footer">
+
+                <h1 className="mb-2 text-2xl font-semibold">{post.title}</h1>
+
+                <p className="mb-4 whitespace-pre-wrap text-heading">{post.content}</p>
+
+                <div className="flex items-center gap-2">
                     <VoteButtons post={post} />
-                    <span className="post-comments">{post._count.comments} comments</span>
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-surface px-3 py-1.5 text-sm text-muted">
+                        <CommentIcon />
+                        {post._count.comments}
+                    </span>
                 </div>
-            </article>
+            </div>
 
             <Comments postId={post.id} />
         </>

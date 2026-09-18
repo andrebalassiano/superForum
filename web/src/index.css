@@ -11,6 +11,7 @@
     --accent: #aa3bff;
     --accent-bg: rgba(170, 59, 255, 0.1);
     --accent-border: rgba(170, 59, 255, 0.5);
+    --surface: #f2f1f4;
     --shadow:
         rgba(0, 0, 0, 0.1) 0 10px 15px -3px,
         rgba(0, 0, 0, 0.05) 0 4px 6px -2px;
@@ -30,6 +31,7 @@
         --accent: #c084fc;
         --accent-bg: rgba(192, 132, 252, 0.15);
         --accent-border: rgba(192, 132, 252, 0.5);
+        --surface: #21232b;
         --shadow:
             rgba(0, 0, 0, 0.4) 0 10px 15px -3px,
             rgba(0, 0, 0, 0.25) 0 4px 6px -2px;
@@ -50,6 +52,7 @@
     --color-accent: var(--accent);
     --color-accent-soft: var(--accent-bg);
     --color-accent-line: var(--accent-border);
+    --color-surface: var(--surface);
     --font-sans: var(--sans);
     --font-mono: var(--mono);
 }

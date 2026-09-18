@@ -18,8 +18,9 @@ function App() {
                 Utilities like border-border / bg-bg / text-heading come from the theme tokens and flip
                 for dark mode automatically. */}
             <header className="sticky top-0 z-10 border-b border-border bg-bg">
-                {/* Inner container matches the page column width so the header lines up with content. */}
-                <div className="mx-auto flex h-14 max-w-2xl items-center justify-between px-4">
+                {/* Full-width bar: title hard-left, nav hard-right (unlike the page content, which is
+                    centered in a column below). */}
+                <div className="flex h-14 items-center justify-between px-4">
                     <Link
                         to="/"
                         className="text-lg font-semibold text-heading no-underline hover:text-accent"

@@ -1,31 +1,50 @@
 import { Link } from 'react-router';
 import type { Post } from '../types';
 import VoteButtons from './VoteButtons';
+import { CommentIcon } from './icons';
+import { timeAgo } from '../lib/time';
 
-// A "presentational" component: hand it one post, it renders that post's card. It holds no state and
-// fetches nothing — it just displays what it's given, and links to the post and its community.
-
-// Props are a component's inputs — the equivalent of function parameters. We describe them with a
-// TypeScript interface so a caller can't forget `post` or pass the wrong shape.
 interface PostCardProps {
     post: Post;
 }
 
-// `{ post }` destructures the single props object, pulling out the `post` field.
+// A feed card in the current Reddit layout: metadata line on top, then the title and a content
+// preview, then a horizontal action bar (vote pill + comment pill).
 function PostCard({ post }: PostCardProps) {
     return (
-        <article className="post-card">
-            <h2 className="post-title">
-                <Link to={`/posts/${post.id}`}>{post.title}</Link>
-            </h2>
-            <p className="post-meta">
-                <Link to={`/communities/${post.community.id}`}>{post.community.name}</Link> · by{' '}
-                {post.author.username}
+        <article className="mb-3 rounded-lg border border-border bg-bg p-4 transition-colors hover:border-accent-line">
+            <p className="mb-1 text-xs text-muted">
+                <Link
+                    to={`/communities/${post.community.id}`}
+                    className="font-medium text-heading no-underline hover:underline"
+                >
+                    {post.community.name}
+                </Link>{' '}
+                · by {post.author.username} · {timeAgo(post.createdAt)}
             </p>
-            <p className="post-content">{post.content}</p>
-            <div className="post-footer">
+
+            <h2 className="mb-1 text-lg font-semibold">
+                <Link
+                    to={`/posts/${post.id}`}
+                    className="text-heading no-underline hover:underline"
+                >
+                    {post.title}
+                </Link>
+            </h2>
+
+            <p className="mb-3 line-clamp-3 whitespace-pre-wrap text-sm text-muted">
+                {post.content}
+            </p>
+
+            <div className="flex items-center gap-2">
                 <VoteButtons post={post} />
-                <span className="post-comments">{post._count.comments} comments</span>
+                <Link
+                    to={`/posts/${post.id}`}
+                    className="inline-flex items-center gap-1.5 rounded-full bg-surface px-3 py-1.5 text-sm text-muted no-underline hover:text-heading"
+                >
+                    <CommentIcon />
+                    {post._count.comments}
+                </Link>
             </div>
         </article>
     );
