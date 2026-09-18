@@ -1,7 +1,7 @@
+/* Page containers no longer set their own width — the shared <main> column in App.tsx does.
+   These keep only per-view vertical spacing and content styling. */
 .feed {
-    max-width: 680px;
-    margin: 0 auto;
-    padding: 24px 16px 64px;
+    padding: 24px 0 64px;
     text-align: left;
 }
 
@@ -40,58 +40,10 @@
     white-space: pre-wrap;
 }
 
-.post-stats {
-    font-size: 13px;
-    color: var(--text);
-}
-
 .status {
-    max-width: 680px;
-    margin: 48px auto;
+    margin: 48px 0;
     text-align: center;
     color: var(--text);
-}
-
-.app-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    border-bottom: 1px solid var(--border);
-    padding: 16px;
-    margin-bottom: 8px;
-}
-
-.app-nav {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    font-size: 14px;
-}
-.app-nav a {
-    color: var(--accent);
-    text-decoration: none;
-}
-.app-user {
-    color: var(--text);
-}
-.app-new-post {
-    font-weight: 500;
-}
-.app-nav button {
-    padding: 4px 10px;
-    border-radius: 6px;
-    border: 1px solid var(--border);
-    background: none;
-    color: var(--text-h);
-    cursor: pointer;
-    font-size: 14px;
-}
-
-.app-title {
-    font-size: 22px;
-    font-weight: 600;
-    color: var(--text-h);
-    text-decoration: none;
 }
 
 /* Title links look like the title text; only the community link is tinted */
@@ -123,9 +75,7 @@
 }
 
 .post-detail {
-    max-width: 680px;
-    margin: 0 auto;
-    padding: 8px 16px 64px;
+    padding: 8px 0 64px;
 }
 .post-detail h1 {
     font-size: 28px;
@@ -135,7 +85,6 @@
 .auth {
     max-width: 360px;
     margin: 32px auto;
-    padding: 0 16px;
 }
 .auth-form {
     display: flex;
@@ -225,9 +174,7 @@
 }
 
 .comments {
-    max-width: 680px;
-    margin: 0 auto;
-    padding: 8px 16px 64px;
+    padding-bottom: 64px;
 }
 .comments h2 {
     font-size: 20px;
@@ -286,9 +233,7 @@
 }
 
 .new-post {
-    max-width: 560px;
-    margin: 24px auto;
-    padding: 0 16px;
+    padding: 24px 0;
 }
 .new-post h1 {
     font-size: 28px;
