@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiFetch } from '../api';
 import { useAuth } from '../auth/AuthContext';
+import { ErrorMessage } from '../components/states';
 import type { Community, Page } from '../types';
 
 // The "new post" form at /submit: pick a community, write a title + content, POST /posts, then jump
@@ -40,8 +41,11 @@ function NewPostPage() {
     // Creating requires a signed-in user (the backend would 401 anyway).
     if (!user) {
         return (
-            <p className="status">
-                <Link to="/login">Sign in</Link> to create a post.
+            <p className="my-12 text-center text-muted">
+                <Link to="/login" className="text-accent no-underline hover:underline">
+                    Sign in
+                </Link>{' '}
+                to create a post.
             </p>
         );
     }
@@ -96,7 +100,7 @@ function NewPostPage() {
                     />
                 </label>
 
-                {createPost.isError && <p className="auth-error">{createPost.error.message}</p>}
+                {createPost.isError && <ErrorMessage>{createPost.error.message}</ErrorMessage>}
 
                 <button type="submit" disabled={!canSubmit || createPost.isPending}>
                     {createPost.isPending ? 'Posting...' : 'Create post'}

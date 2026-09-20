@@ -3,6 +3,7 @@ import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-q
 import { apiFetch, PAGE_SIZE } from '../api';
 import { useAuth } from '../auth/AuthContext';
 import { useInfiniteScroll } from '../hooks/useInfiniteScroll';
+import { CommentSkeleton, EmptyState, ErrorMessage } from './states';
 import type { Comment, Page } from '../types';
 
 interface CommentsProps {
@@ -70,23 +71,29 @@ function Comments({ postId }: CommentsProps) {
                         rows={3}
                     />
                     {createComment.isError && (
-                        <p className="auth-error">{createComment.error.message}</p>
+                        <ErrorMessage>{createComment.error.message}</ErrorMessage>
                     )}
                     <button type="submit" disabled={createComment.isPending || content.trim() === ''}>
                         {createComment.isPending ? 'Posting...' : 'Comment'}
                     </button>
                 </form>
             ) : (
-                <p className="comments-signin">Sign in to comment.</p>
+                <p className="mb-4 text-sm text-muted">Sign in to comment.</p>
             )}
 
-            {isPending && <p className="status">Loading comments...</p>}
-            {isError && <p className="status">Could not load comments: {error.message}</p>}
+            {isPending && (
+                <>
+                    <CommentSkeleton />
+                    <CommentSkeleton />
+                    <CommentSkeleton />
+                </>
+            )}
+            {isError && <ErrorMessage>Could not load comments: {error.message}</ErrorMessage>}
 
             {!isPending &&
                 !isError &&
                 (comments.length === 0 ? (
-                    <p className="comments-empty">No comments yet.</p>
+                    <EmptyState title="No comments yet" hint="Start the conversation." />
                 ) : (
                     comments.map((c) => (
                         <article key={c.id} className="comment">
@@ -97,7 +104,7 @@ function Comments({ postId }: CommentsProps) {
                 ))}
 
             {hasNextPage && (
-                <div ref={sentinelRef} className="load-more-sentinel">
+                <div ref={sentinelRef} className="min-h-10 p-3 text-center text-sm text-muted">
                     {isFetchingNextPage ? 'Loading more...' : ''}
                 </div>
             )}

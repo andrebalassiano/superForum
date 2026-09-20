@@ -11,12 +11,6 @@
     margin: 8px 0 24px;
 }
 
-.status {
-    margin: 48px 0;
-    text-align: center;
-    color: var(--text);
-}
-
 .back-link {
     display: inline-block;
     margin-bottom: 16px;
@@ -70,10 +64,6 @@
     cursor: pointer;
     font-size: 14px;
 }
-.auth-error {
-    color: #e5484d;
-    font-size: 14px;
-}
 
 .comments {
     padding-bottom: 64px;
@@ -112,12 +102,6 @@
 .comment-form button:disabled {
     opacity: 0.5;
     cursor: default;
-}
-.comments-signin,
-.comments-empty {
-    color: var(--text);
-    font-size: 14px;
-    margin-bottom: 16px;
 }
 .comment {
     border-top: 1px solid var(--border);
@@ -179,12 +163,4 @@
 .new-post-form button:disabled {
     opacity: 0.5;
     cursor: default;
-}
-
-.load-more-sentinel {
-    min-height: 40px;
-    padding: 12px;
-    text-align: center;
-    color: var(--text);
-    font-size: 14px;
 }

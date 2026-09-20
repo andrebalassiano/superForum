@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router';
 import { useAuth } from '../auth/AuthContext';
+import { ErrorMessage } from '../components/states';
 
 function LoginPage() {
     const { signIn, signUp } = useAuth();
@@ -63,7 +64,7 @@ function LoginPage() {
                     />
                 </label>
 
-                {error && <p className="auth-error">{error}</p>}
+                {error && <ErrorMessage>{error}</ErrorMessage>}
 
                 <button type="submit" disabled={submitting}>
                     {submitting ? 'Working...' : mode === 'signin' ? 'Sign in' : 'Sign up'}

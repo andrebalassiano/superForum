@@ -5,6 +5,7 @@ import type { Post } from '../types';
 import VoteButtons from '../components/VoteButtons';
 import Comments from '../components/Comments';
 import { CommentIcon } from '../components/icons';
+import { PostCardSkeleton, ErrorMessage } from '../components/states';
 import { timeAgo } from '../lib/time';
 
 // A single post at /posts/:id — the post (same layout as a feed card, full content) then its thread.
@@ -21,8 +22,20 @@ function PostPage() {
         queryFn: () => apiFetch<Post>(`/posts/${id}`),
     });
 
-    if (isPending) return <p className="status">Loading post...</p>;
-    if (isError) return <p className="status">Could not load post: {error.message}</p>;
+    if (isPending) {
+        return (
+            <div className="pt-2 pb-8">
+                <PostCardSkeleton />
+            </div>
+        );
+    }
+    if (isError) {
+        return (
+            <div className="pt-2 pb-8">
+                <ErrorMessage>Could not load post: {error.message}</ErrorMessage>
+            </div>
+        );
+    }
 
     return (
         <>

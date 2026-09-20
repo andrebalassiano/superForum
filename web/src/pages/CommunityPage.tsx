@@ -3,6 +3,7 @@ import { useInfiniteQuery } from '@tanstack/react-query';
 import { apiFetch, PAGE_SIZE } from '../api';
 import type { Page, Post } from '../types';
 import PostCard from '../components/PostCard';
+import { PostCardSkeleton, EmptyState, ErrorMessage } from '../components/states';
 import { useInfiniteScroll } from '../hooks/useInfiniteScroll';
 
 // One community's posts at /communities/:id — same paginated pattern as the home feed, scoped to
@@ -27,8 +28,30 @@ function CommunityPage() {
         hasNextPage && !isFetchingNextPage,
     );
 
-    if (isPending) return <p className="status">Loading community...</p>;
-    if (isError) return <p className="status">Could not load community: {error.message}</p>;
+    const backLink = (
+        <Link to="/" className="back-link">
+            &larr; Back to feed
+        </Link>
+    );
+
+    if (isPending) {
+        return (
+            <div className="feed">
+                {backLink}
+                <PostCardSkeleton />
+                <PostCardSkeleton />
+                <PostCardSkeleton />
+            </div>
+        );
+    }
+    if (isError) {
+        return (
+            <div className="feed">
+                {backLink}
+                <ErrorMessage>Could not load community: {error.message}</ErrorMessage>
+            </div>
+        );
+    }
 
     const posts = data.pages.flatMap((page) => page.items);
     // The community's name rides along on each post; read it off the first, or fall back.
@@ -36,20 +59,24 @@ function CommunityPage() {
 
     return (
         <div className="feed">
-            <Link to="/" className="back-link">
-                &larr; Back to feed
-            </Link>
+            {backLink}
             <h1>{communityName}</h1>
 
             {posts.length === 0 ? (
-                <p className="status">No posts in this community yet.</p>
+                <EmptyState
+                    title="No posts in this community yet"
+                    hint="Be the first to post here."
+                />
             ) : (
                 <>
                     {posts.map((post) => (
                         <PostCard key={post.id} post={post} />
                     ))}
                     {hasNextPage && (
-                        <div ref={sentinelRef} className="load-more-sentinel">
+                        <div
+                            ref={sentinelRef}
+                            className="min-h-10 p-3 text-center text-sm text-muted"
+                        >
                             {isFetchingNextPage ? 'Loading more...' : ''}
                         </div>
                     )}

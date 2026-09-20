@@ -3,6 +3,7 @@ import { useInfiniteQuery } from '@tanstack/react-query';
 import { apiFetch, PAGE_SIZE } from '../api';
 import type { Page, Post } from '../types';
 import PostCard from '../components/PostCard';
+import { PostCardSkeleton, EmptyState, ErrorMessage } from '../components/states';
 import { useInfiniteScroll } from '../hooks/useInfiniteScroll';
 
 const SORTS = [
@@ -62,7 +63,9 @@ function FeedPage() {
         return (
             <div className="feed">
                 {tabs}
-                <p className="status">Loading posts...</p>
+                <PostCardSkeleton />
+                <PostCardSkeleton />
+                <PostCardSkeleton />
             </div>
         );
     }
@@ -70,7 +73,7 @@ function FeedPage() {
         return (
             <div className="feed">
                 {tabs}
-                <p className="status">Could not load posts: {error.message}</p>
+                <ErrorMessage>Could not load posts: {error.message}</ErrorMessage>
             </div>
         );
     }
@@ -81,12 +84,12 @@ function FeedPage() {
         <div className="feed">
             {tabs}
             {posts.length === 0 ? (
-                <p className="status">No posts yet.</p>
+                <EmptyState title="No posts yet" hint="Be the first to post something." />
             ) : (
                 posts.map((post) => <PostCard key={post.id} post={post} />)
             )}
             {hasNextPage && (
-                <div ref={sentinelRef} className="load-more-sentinel">
+                <div ref={sentinelRef} className="min-h-10 p-3 text-center text-sm text-muted">
                     {isFetchingNextPage ? 'Loading more...' : ''}
                 </div>
             )}
