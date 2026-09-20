@@ -29,14 +29,14 @@ function CommunityPage() {
     );
 
     const backLink = (
-        <Link to="/" className="back-link">
+        <Link to="/" className="mb-4 inline-block text-sm text-accent no-underline hover:underline">
             &larr; Back to feed
         </Link>
     );
 
     if (isPending) {
         return (
-            <div className="feed">
+            <div className="pt-6 pb-16">
                 {backLink}
                 <PostCardSkeleton />
                 <PostCardSkeleton />
@@ -46,7 +46,7 @@ function CommunityPage() {
     }
     if (isError) {
         return (
-            <div className="feed">
+            <div className="pt-6 pb-16">
                 {backLink}
                 <ErrorMessage>Could not load community: {error.message}</ErrorMessage>
             </div>
@@ -58,9 +58,9 @@ function CommunityPage() {
     const communityName = posts[0]?.community.name ?? 'Community';
 
     return (
-        <div className="feed">
+        <div className="pt-6 pb-16">
             {backLink}
-            <h1>{communityName}</h1>
+            <h1 className="mb-6 text-2xl font-semibold">{communityName}</h1>
 
             {posts.length === 0 ? (
                 <EmptyState

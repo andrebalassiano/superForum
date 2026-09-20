@@ -3,6 +3,8 @@ import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-q
 import { apiFetch, PAGE_SIZE } from '../api';
 import { useAuth } from '../auth/AuthContext';
 import { useInfiniteScroll } from '../hooks/useInfiniteScroll';
+import Button from './Button';
+import { inputClasses } from './forms';
 import { CommentSkeleton, EmptyState, ErrorMessage } from './states';
 import type { Comment, Page } from '../types';
 
@@ -53,18 +55,22 @@ function Comments({ postId }: CommentsProps) {
     const comments = data?.pages.flatMap((page) => page.items) ?? [];
 
     return (
-        <section className="comments">
-            <h2>Comments</h2>
+        <section className="pb-16">
+            <h2 className="mt-6 mb-3 border-t border-border pt-6 text-xl font-semibold">Comments</h2>
 
             {user ? (
                 <form
-                    className="comment-form"
+                    className="mb-6 flex flex-col gap-2"
                     onSubmit={(e) => {
                         e.preventDefault();
                         if (content.trim()) createComment.mutate(content);
                     }}
                 >
+                    {/* No visible label (the placeholder does that job visually), so aria-label
+                        gives screen readers the name instead. */}
                     <textarea
+                        aria-label="Add a comment"
+                        className={`${inputClasses} resize-y`}
                         value={content}
                         onChange={(e) => setContent(e.target.value)}
                         placeholder="Add a comment..."
@@ -73,9 +79,13 @@ function Comments({ postId }: CommentsProps) {
                     {createComment.isError && (
                         <ErrorMessage>{createComment.error.message}</ErrorMessage>
                     )}
-                    <button type="submit" disabled={createComment.isPending || content.trim() === ''}>
+                    <Button
+                        type="submit"
+                        className="self-start"
+                        disabled={createComment.isPending || content.trim() === ''}
+                    >
                         {createComment.isPending ? 'Posting...' : 'Comment'}
-                    </button>
+                    </Button>
                 </form>
             ) : (
                 <p className="mb-4 text-sm text-muted">Sign in to comment.</p>
@@ -96,9 +106,11 @@ function Comments({ postId }: CommentsProps) {
                     <EmptyState title="No comments yet" hint="Start the conversation." />
                 ) : (
                     comments.map((c) => (
-                        <article key={c.id} className="comment">
-                            <p className="comment-meta">{c.author.username}</p>
-                            <p className="comment-content">{c.content}</p>
+                        <article key={c.id} className="border-t border-border py-3">
+                            <p className="mb-1 text-xs font-medium text-accent">{c.author.username}</p>
+                            <p className="wrap-break-word whitespace-pre-wrap text-heading">
+                                {c.content}
+                            </p>
                         </article>
                     ))
                 ))}

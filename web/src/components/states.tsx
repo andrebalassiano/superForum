@@ -9,8 +9,15 @@ import type { ReactNode } from 'react';
 // bg-surface keeps them subtle in both themes. Skeletons feel faster than a spinner or "Loading…"
 // text because the page's shape is already on screen before the data arrives.
 
+// motion-reduce:animate-none respects the OS "reduce motion" setting for users who find shimmer
+// distracting or nauseating — the blocks just sit still.
 function Bar({ className }: { className: string }) {
-    return <div className={`animate-pulse bg-surface ${className}`} aria-hidden="true" />;
+    return (
+        <div
+            className={`animate-pulse bg-surface motion-reduce:animate-none ${className}`}
+            aria-hidden="true"
+        />
+    );
 }
 
 // Mirrors PostCard: metadata line, title, two content lines, then the two action pills.

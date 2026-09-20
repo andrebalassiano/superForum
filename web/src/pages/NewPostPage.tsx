@@ -3,6 +3,8 @@ import { Link, useNavigate } from 'react-router';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiFetch } from '../api';
 import { useAuth } from '../auth/AuthContext';
+import Button from '../components/Button';
+import { Field, inputClasses } from '../components/forms';
 import { ErrorMessage } from '../components/states';
 import type { Community, Page } from '../types';
 
@@ -53,18 +55,18 @@ function NewPostPage() {
     const canSubmit = title.trim() !== '' && content.trim() !== '' && communityId !== '';
 
     return (
-        <div className="new-post">
-            <h1>New post</h1>
+        <div className="py-6">
+            <h1 className="mb-4 text-2xl font-semibold">New post</h1>
             <form
-                className="new-post-form"
+                className="flex flex-col gap-3"
                 onSubmit={(e) => {
                     e.preventDefault();
                     if (canSubmit) createPost.mutate();
                 }}
             >
-                <label>
-                    Community
+                <Field label="Community">
                     <select
+                        className={inputClasses}
                         value={communityId}
                         onChange={(e) => setCommunityId(e.target.value)}
                         required
@@ -78,33 +80,33 @@ function NewPostPage() {
                             </option>
                         ))}
                     </select>
-                </label>
+                </Field>
 
-                <label>
-                    Title
+                <Field label="Title">
                     <input
                         type="text"
+                        className={inputClasses}
                         value={title}
                         onChange={(e) => setTitle(e.target.value)}
                         required
                     />
-                </label>
+                </Field>
 
-                <label>
-                    Content
+                <Field label="Content">
                     <textarea
+                        className={`${inputClasses} resize-y`}
                         value={content}
                         onChange={(e) => setContent(e.target.value)}
                         rows={6}
                         required
                     />
-                </label>
+                </Field>
 
                 {createPost.isError && <ErrorMessage>{createPost.error.message}</ErrorMessage>}
 
-                <button type="submit" disabled={!canSubmit || createPost.isPending}>
+                <Button type="submit" disabled={!canSubmit || createPost.isPending} className="self-start">
                     {createPost.isPending ? 'Posting...' : 'Create post'}
-                </button>
+                </Button>
             </form>
         </div>
     );

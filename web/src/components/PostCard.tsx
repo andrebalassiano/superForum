@@ -23,7 +23,9 @@ function PostCard({ post }: PostCardProps) {
                 · by {post.author.username} · {timeAgo(post.createdAt)}
             </p>
 
-            <h2 className="mb-1 text-lg font-semibold">
+            {/* wrap-break-word lets an unbroken long word (a URL, say) wrap instead of forcing the
+                page to scroll sideways on a phone. */}
+            <h2 className="mb-1 wrap-break-word text-lg font-semibold">
                 <Link
                     to={`/posts/${post.id}`}
                     className="text-heading no-underline hover:underline"
@@ -32,7 +34,7 @@ function PostCard({ post }: PostCardProps) {
                 </Link>
             </h2>
 
-            <p className="mb-3 line-clamp-3 whitespace-pre-wrap text-sm text-muted">
+            <p className="mb-3 line-clamp-3 wrap-break-word whitespace-pre-wrap text-sm text-muted">
                 {post.content}
             </p>
 

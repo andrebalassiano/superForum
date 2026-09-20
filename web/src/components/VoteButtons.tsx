@@ -74,8 +74,9 @@ function VoteButtons({ post }: VoteButtonsProps) {
     });
 
     const cv = post.currentUserVote;
+    // p-2 around a 20px icon gives a ~36px hit area — comfortable for thumbs on a phone.
     const iconButton =
-        'rounded-full p-1.5 disabled:cursor-default disabled:opacity-50 enabled:cursor-pointer enabled:hover:text-heading';
+        'rounded-full p-2 disabled:cursor-default disabled:opacity-50 enabled:cursor-pointer enabled:hover:text-heading';
 
     return (
         <div className="inline-flex items-center gap-1 rounded-full bg-surface px-1">

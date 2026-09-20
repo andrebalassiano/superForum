@@ -1,12 +1,12 @@
 import { Routes, Route, Link } from 'react-router';
 import { useAuth } from './auth/AuthContext';
-import Button, { buttonClasses } from './components/Button';
+import Button from './components/Button';
+import { buttonClasses } from './components/buttonStyles';
 import FeedPage from './pages/FeedPage';
 import PostPage from './pages/PostPage';
 import CommunityPage from './pages/CommunityPage';
 import LoginPage from './pages/LoginPage';
 import NewPostPage from './pages/NewPostPage';
-import './App.css';
 
 // App is the shell: a sticky header on every page plus a <Routes> block that swaps the page by URL.
 function App() {
@@ -14,12 +14,21 @@ function App() {
 
     return (
         <div>
+            {/* Skip link: invisible until a keyboard user tabs to it (sr-only → not-sr-only on
+                focus), then jumps past the header straight to the content. Standard a11y practice. */}
+            <a
+                href="#main"
+                className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-20 focus:rounded-md focus:bg-bg focus:px-3 focus:py-2 focus:text-accent"
+            >
+                Skip to content
+            </a>
+
             {/* Sticky so navigation is always reachable; bg-bg is opaque so content scrolls under it.
                 Utilities like border-border / bg-bg / text-heading come from the theme tokens and flip
                 for dark mode automatically. */}
             <header className="sticky top-0 z-10 border-b border-border bg-bg">
                 {/* Full-width bar: title hard-left, nav hard-right (unlike the page content, which is
-                    centered in a column below). */}
+                    centered in a column below). Tighter gap on phones. */}
                 <div className="flex h-14 items-center justify-between px-4">
                     <Link
                         to="/"
@@ -28,7 +37,7 @@ function App() {
                         superForum
                     </Link>
 
-                    <nav className="flex items-center gap-3">
+                    <nav aria-label="Primary" className="flex items-center gap-2 sm:gap-3">
                         {user ? (
                             <>
                                 {/* Primary action — visually distinct from the account controls. A
@@ -53,7 +62,7 @@ function App() {
             </header>
 
             {/* One shared content column for every page — pages no longer set their own width. */}
-            <main className="mx-auto max-w-2xl px-4">
+            <main id="main" className="mx-auto max-w-2xl px-4">
                 <Routes>
                     <Route path="/" element={<FeedPage />} />
                     <Route path="/posts/:id" element={<PostPage />} />

@@ -38,13 +38,16 @@ function FeedPage() {
         hasNextPage && !isFetchingNextPage,
     );
 
-    // Rendered in every branch so the tabs stay put while the feed loads/errors.
+    // Rendered in every branch so the tabs stay put while the feed loads/errors. The group has a
+    // name for screen readers, and aria-pressed tells them which sort is active (they're toggle
+    // buttons — the underline alone is visual-only).
     const tabs = (
-        <div className="mb-4 flex gap-1 border-b border-border">
+        <div role="group" aria-label="Sort posts" className="mb-4 flex gap-1 border-b border-border">
             {SORTS.map(({ key, label }) => (
                 <button
                     key={key}
                     type="button"
+                    aria-pressed={sort === key}
                     // Omit the param for the default ('new') to keep the URL clean.
                     onClick={() => setSearchParams(key === 'new' ? {} : { sort: key })}
                     className={`-mb-px cursor-pointer border-b-2 px-3 py-2 text-sm font-medium ${
@@ -61,7 +64,7 @@ function FeedPage() {
 
     if (isPending) {
         return (
-            <div className="feed">
+            <div className="pt-6 pb-16">
                 {tabs}
                 <PostCardSkeleton />
                 <PostCardSkeleton />
@@ -71,7 +74,7 @@ function FeedPage() {
     }
     if (isError) {
         return (
-            <div className="feed">
+            <div className="pt-6 pb-16">
                 {tabs}
                 <ErrorMessage>Could not load posts: {error.message}</ErrorMessage>
             </div>
@@ -81,7 +84,7 @@ function FeedPage() {
     const posts = data.pages.flatMap((page) => page.items);
 
     return (
-        <div className="feed">
+        <div className="pt-6 pb-16">
             {tabs}
             {posts.length === 0 ? (
                 <EmptyState title="No posts yet" hint="Be the first to post something." />

@@ -57,9 +57,11 @@ function PostPage() {
                     · by {post.author.username} · {timeAgo(post.createdAt)}
                 </p>
 
-                <h1 className="mb-2 text-2xl font-semibold">{post.title}</h1>
+                <h1 className="mb-2 wrap-break-word text-2xl font-semibold">{post.title}</h1>
 
-                <p className="mb-4 whitespace-pre-wrap text-heading">{post.content}</p>
+                <p className="mb-4 wrap-break-word whitespace-pre-wrap text-heading">
+                    {post.content}
+                </p>
 
                 <div className="flex items-center gap-2">
                     <VoteButtons post={post} />

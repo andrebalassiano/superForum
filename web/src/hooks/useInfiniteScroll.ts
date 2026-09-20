@@ -9,10 +9,14 @@ import { useEffect, useRef } from 'react';
 export function useInfiniteScroll(onIntersect: () => void, enabled: boolean) {
     const sentinelRef = useRef<HTMLDivElement | null>(null);
 
-    // Keep the latest callback in a ref so the effect below doesn't need it as a dependency — that
-    // way we don't tear down and rebuild the observer on every render, only when `enabled` changes.
+    // Keep the latest callback in a ref so the observer effect below doesn't need it as a
+    // dependency — that way we don't tear down and rebuild the observer on every render, only when
+    // `enabled` changes. The ref is updated in an effect (after render), never during render: React
+    // treats refs as mutable escape hatches, and writing them mid-render is a rules-of-React violation.
     const callbackRef = useRef(onIntersect);
-    callbackRef.current = onIntersect;
+    useEffect(() => {
+        callbackRef.current = onIntersect;
+    });
 
     useEffect(() => {
         const el = sentinelRef.current;

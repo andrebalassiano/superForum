@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router';
 import { useAuth } from '../auth/AuthContext';
+import Button from '../components/Button';
+import { Field, inputClasses } from '../components/forms';
 import { ErrorMessage } from '../components/states';
 
 function LoginPage() {
@@ -31,53 +33,58 @@ function LoginPage() {
     }
 
     return (
-        <div className="auth">
-            <h1>{mode === 'signin' ? 'Sign in' : 'Create account'}</h1>
+        <div className="mx-auto my-8 max-w-sm">
+            <h1 className="mb-4 text-2xl font-semibold">
+                {mode === 'signin' ? 'Sign in' : 'Create account'}
+            </h1>
 
             {/* Controlled inputs: React state is the single source of truth. `value` reads from
-                state, `onChange` writes back to it — so what's on screen always matches `email`.
-                The inline handler stops the browser's default full-page submit, then runs our async
-                submit (void marks the promise as intentionally not awaited here). */}
+                state, `onChange` writes back to it. The inline handler stops the browser's default
+                full-page submit, then runs our async submit. autoComplete tells browsers and
+                password managers which field is which. */}
             <form
                 onSubmit={(e) => {
                     e.preventDefault();
                     void handleSubmit();
                 }}
-                className="auth-form"
+                className="flex flex-col gap-3"
             >
-                <label>
-                    Email
+                <Field label="Email">
                     <input
                         type="email"
+                        className={inputClasses}
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
+                        autoComplete="email"
                         required
                     />
-                </label>
-                <label>
-                    Password
+                </Field>
+                <Field label="Password">
                     <input
                         type="password"
+                        className={inputClasses}
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
+                        autoComplete={mode === 'signin' ? 'current-password' : 'new-password'}
                         required
                     />
-                </label>
+                </Field>
 
                 {error && <ErrorMessage>{error}</ErrorMessage>}
 
-                <button type="submit" disabled={submitting}>
+                <Button type="submit" disabled={submitting} className="self-start">
                     {submitting ? 'Working...' : mode === 'signin' ? 'Sign in' : 'Sign up'}
-                </button>
+                </Button>
             </form>
 
-            <button
+            <Button
                 type="button"
-                className="auth-toggle"
+                variant="ghost"
+                className="mt-3 px-0"
                 onClick={() => setMode(mode === 'signin' ? 'signup' : 'signin')}
             >
                 {mode === 'signin' ? 'Need an account? Sign up' : 'Have an account? Sign in'}
-            </button>
+            </Button>
         </div>
     );
 }

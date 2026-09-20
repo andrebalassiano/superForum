@@ -96,3 +96,11 @@ h3 {
 #root {
     min-height: 100svh;
 }
+
+/* Keyboard focus: one consistent, visible ring for every interactive element, app-wide. Uses the
+   accent var so it flips for dark mode. :focus-visible fires for keyboard/assistive focus only,
+   not for mouse clicks — so it never clutters pointer use. */
+:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+}
