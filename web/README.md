@@ -1,32 +1,20 @@
-# React + TypeScript + Vite
+# superForum — web client
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+The React single-page client for superForum. It's a self-contained project: its own dependencies, its own TypeScript config, its own linter. The API it talks to lives at the repository root.
 
-Currently, two official plugins are available:
+React with TypeScript, built by Vite. Routing is React Router, server state is TanStack Query, auth is `@supabase/supabase-js`, and styling is Tailwind over a small set of semantic design tokens.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
-
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the Oxlint configuration
-
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
-
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+```bash
+npm install
+cp .env.example .env.local   # the Supabase project URL and publishable key
+npm run dev                  # starts on http://localhost:5173
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+The API has to be running too (`npm run dev` at the repository root, on port 3000) — the client reads from it, and the API's CORS allowlist already expects the Vite dev server's origin. Only `VITE_`-prefixed variables reach browser code, and everything that does is compiled into the bundle, so `.env.local` holds the publishable key and nothing secret.
+
+```bash
+npm run build     # type-check and bundle to dist/
+npm run lint      # oxlint
+```
+
+The [root README](../README.md) explains the client's design decisions — the two mutation strategies, how auth threads through, and how the theme tokens drive dark mode — alongside the API they're built against.

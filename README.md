@@ -3,9 +3,9 @@
 [![CI](https://github.com/andrebalassiano/superForum/actions/workflows/ci.yml/badge.svg)](https://github.com/andrebalassiano/superForum/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/andrebalassiano/superForum/branch/main/graph/badge.svg)](https://codecov.io/gh/andrebalassiano/superForum)
 
-superForum is a Reddit-style forum API. It lets people register, spin up communities, write posts and comments, and vote on them. It's a REST backend written in TypeScript on Express 5, with Prisma 7 talking to a Postgres database and Supabase handling authentication. Every write is authenticated with a server-verified JWT and validated with Zod before it reaches the database.
+superForum is a Reddit-style forum. It lets people register, spin up communities, write posts and comments, and vote on them. It comes in two halves: a REST API written in TypeScript on Express 5, with Prisma 7 talking to a Postgres database and Supabase handling authentication, and a React single-page client built against it. Every write is authenticated with a server-verified JWT and validated with Zod before it reaches the database.
 
-I built it partly as a learning project and partly as a reference for how I like to structure a Node backend, so the emphasis throughout is on a clean, predictable layout rather than clever shortcuts.
+I built it partly as a learning project and partly as a reference for how I like to structure a Node backend, so the emphasis throughout is on a clean, predictable layout rather than clever shortcuts. The API lives at the repository root; the client lives in `web/` as a self-contained project with its own toolchain.
 
 ## How it's organized
 
@@ -55,6 +55,18 @@ The vote **score** on a post or comment is **denormalized** — stored as a colu
 
 A **Profile** is keyed by the user's Supabase auth UUID rather than a generated id, and has a unique username. A **Post** belongs to a profile (its author) and a community, and owns its comments and votes. A **Comment** belongs to a post and a profile. A **Community** has a unique name and owns its posts, which cascade-delete with it. **PostVote** and **CommentVote** are each unique per user-and-target pair, with a `value` of `1` or `-1`. The full schema, with its indexes and cascade rules, is in `prisma/schema.prisma`.
 
+## The web client
+
+The client in `web/` is a React single-page app built with Vite and TypeScript, styled with Tailwind. It's a real consumer of the API rather than a demo: you can browse the feed, open a community or a post, sign in, vote, comment, and write posts.
+
+Server data is handled by TanStack Query rather than hand-rolled fetching in `useEffect`. The distinction it forces — between data that lives on the server and is only cached in the browser, and state that genuinely belongs to the UI — is what shapes the whole client. Queries are keyed per resource, the feed and comment threads use `useInfiniteQuery` to consume the `{ items, nextCursor }` envelope directly, and an `IntersectionObserver` pulls the next page as you reach the bottom.
+
+Writes use two different strategies on purpose. Voting is **optimistic**: clicking a thumb updates the cached post immediately — in the feed, in the community view, and on the post page at once — applying the same score delta the server will, and rolling every cache back from a snapshot if the request fails. Creating a comment or a post instead **invalidates and refetches**, because the server assigns the id and the timestamp and there's nothing useful to guess at. Knowing which of those two a given write wants is most of what using a query cache well amounts to.
+
+Auth is the client half of the same JWT the API validates. `@supabase/supabase-js` handles sign-in and holds the session, refreshing the token on its own; a small React context makes the current user available anywhere without threading props; and the fetch wrapper attaches the token to every request, which is what makes personalized reads like `currentUserVote` come back filled in. Signing in or out invalidates the cache, so nothing personalized is left stale.
+
+Styling is Tailwind over a small set of semantic design tokens. The palette lives as CSS variables that flip for dark mode and is handed to Tailwind through `@theme`, so light and dark are handled by the tokens themselves rather than by a `dark:` variant hung on every element.
+
 ## Running it locally
 
 You'll need Node 20 or newer and a Supabase project for the Postgres database and auth.
@@ -70,6 +82,17 @@ npm run dev               # starts on http://localhost:3000
 The `.env.example` file explains where each value comes from. In short: `DATABASE_URL` is the pooled Postgres connection used at runtime, `DIRECT_URL` is the direct connection Prisma uses for migrations, and `SUPABASE_URL` plus `SUPABASE_PUBLISHABLE_KEY` point at the Supabase project for auth.
 
 One thing to know: the Prisma client is generated into `src/generated/prisma` rather than the usual `node_modules` location, so `npx prisma generate` isn't optional — skip it and the imports won't resolve.
+
+That's the API. The client is a separate project underneath it:
+
+```bash
+cd web
+npm install
+cp .env.example .env.local   # the Supabase project URL and publishable key
+npm run dev                  # starts on http://localhost:5173
+```
+
+Both need to be running to use the app: the client calls the API at `http://localhost:3000/api`, and the API's CORS allowlist (`CORS_ORIGIN`) defaults to the Vite dev server's origin. The client's `.env.local` takes the same Supabase URL and publishable key the API uses, prefixed with `VITE_`, since that's the only prefix Vite exposes to browser code. Worth being clear about why that's safe: everything in a `VITE_` variable is compiled into the bundle and readable by anyone, which is fine for the publishable key — it's designed to be public — and is exactly why a service key or a database URL must never go near one.
 
 ## Tests
 
@@ -87,11 +110,11 @@ There's also an opt-in **real-token** lane (`npm run test:realtoken`) that skips
 
 ## Still to come
 
-The core is complete, tested, paginated, sortable, and rate limited. The main thing left is a small front end to actually browse it.
+Both halves are complete and working end to end. What's left is polish on the client rather than anything structural — finishing the visual pass, a page for browsing communities, and better loading and empty states. The client also doesn't have a test suite yet; the badges at the top cover the API only, and closing that gap is the next real piece of work.
 
 ## Credits
 
-Built by Andre Balassiano and Luiz Tatemoto. I wrote the auth, communities, comments, and votes modules along with the shared middleware layer.
+Built by Andre Balassiano and Luiz Tatemoto. I wrote the auth, communities, comments, and votes modules along with the shared middleware layer, and the web client is entirely mine.
 
 ## License
 

@@ -1,7 +1,7 @@
 {
   "name": "superforum",
   "version": "1.0.0",
-  "description": "A Reddit-style forum REST API built with TypeScript, Express 5, Prisma 7, and Supabase auth.",
+  "description": "A full-stack Reddit-style forum: a TypeScript REST API on Express 5 and Prisma 7 with Supabase auth, plus a React client.",
   "private": true,
   "main": "dist/server.js",
   "engines": {
@@ -32,6 +32,8 @@
     "prisma",
     "postgresql",
     "supabase",
+    "react",
+    "full-stack",
     "forum"
   ],
   "author": "Andre Balassiano",
