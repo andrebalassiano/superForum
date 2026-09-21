@@ -13,13 +13,22 @@ interface VoteButtonsProps {
     post: Post;
 }
 
+// Matches only the post LIST caches: the home feed (['posts', sort]) and community feeds
+// (['community', id, 'posts']). It must NOT match ['community', id] — that caches a Community object,
+// not a paged post list, and the updater below assumes the paged shape.
+function isPostListQuery(q: { queryKey: readonly unknown[] }) {
+    return (
+        q.queryKey[0] === 'posts' || (q.queryKey[0] === 'community' && q.queryKey[2] === 'posts')
+    );
+}
+
 // Update this post everywhere it's cached — the single-post detail query AND every infinite list
 // query (feed + communities) — so an optimistic vote shows up consistently across all views at once.
 function patchPostInCaches(queryClient: QueryClient, postId: string, patch: (p: Post) => Post) {
     queryClient.setQueryData<Post>(['post', postId], (old) => (old ? patch(old) : old));
 
     queryClient.setQueriesData<InfiniteData<Page<Post>>>(
-        { predicate: (q) => q.queryKey[0] === 'posts' || q.queryKey[0] === 'community' },
+        { predicate: isPostListQuery },
         (old) =>
             old
                 ? {
@@ -54,7 +63,7 @@ function VoteButtons({ post }: VoteButtonsProps) {
 
             const previousDetail = queryClient.getQueryData<Post>(['post', post.id]);
             const previousLists = queryClient.getQueriesData<InfiniteData<Page<Post>>>({
-                predicate: (q) => q.queryKey[0] === 'posts' || q.queryKey[0] === 'community',
+                predicate: isPostListQuery,
             });
 
             patchPostInCaches(queryClient, post.id, (p) => ({

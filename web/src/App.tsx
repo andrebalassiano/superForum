@@ -1,10 +1,11 @@
-import { Routes, Route, Link } from 'react-router';
+import { Routes, Route, Link, NavLink } from 'react-router';
 import { useAuth } from './auth/AuthContext';
 import Button from './components/Button';
 import { buttonClasses } from './components/buttonStyles';
 import FeedPage from './pages/FeedPage';
 import PostPage from './pages/PostPage';
 import CommunityPage from './pages/CommunityPage';
+import CommunitiesPage from './pages/CommunitiesPage';
 import LoginPage from './pages/LoginPage';
 import NewPostPage from './pages/NewPostPage';
 
@@ -38,6 +39,20 @@ function App() {
                     </Link>
 
                     <nav aria-label="Primary" className="flex items-center gap-2 sm:gap-3">
+                        {/* NavLink is a Link that knows whether its route is active, so the browse
+                            link highlights while you're on /communities. Public — everyone sees it. */}
+                        <NavLink
+                            to="/communities"
+                            className={({ isActive }) =>
+                                `px-1 text-sm no-underline ${
+                                    isActive
+                                        ? 'font-medium text-heading'
+                                        : 'text-muted hover:text-heading'
+                                }`
+                            }
+                        >
+                            Communities
+                        </NavLink>
                         {user ? (
                             <>
                                 {/* Primary action — visually distinct from the account controls. A
@@ -66,6 +81,7 @@ function App() {
                 <Routes>
                     <Route path="/" element={<FeedPage />} />
                     <Route path="/posts/:id" element={<PostPage />} />
+                    <Route path="/communities" element={<CommunitiesPage />} />
                     <Route path="/communities/:id" element={<CommunityPage />} />
                     <Route path="/login" element={<LoginPage />} />
                     <Route path="/submit" element={<NewPostPage />} />

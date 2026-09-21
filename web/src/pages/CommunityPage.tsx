@@ -1,7 +1,7 @@
 import { useParams, Link } from 'react-router';
-import { useInfiniteQuery } from '@tanstack/react-query';
+import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { apiFetch, PAGE_SIZE } from '../api';
-import type { Page, Post } from '../types';
+import type { Community, Page, Post } from '../types';
 import PostCard from '../components/PostCard';
 import { PostCardSkeleton, EmptyState, ErrorMessage } from '../components/states';
 import { useInfiniteScroll } from '../hooks/useInfiniteScroll';
@@ -10,6 +10,13 @@ import { useInfiniteScroll } from '../hooks/useInfiniteScroll';
 // GET /communities/:id/posts.
 function CommunityPage() {
     const { id } = useParams();
+
+    // The community itself, for its name — so an empty community still shows a real heading rather
+    // than the fallback. Runs alongside the posts query; TanStack fires both in parallel.
+    const communityQuery = useQuery({
+        queryKey: ['community', id],
+        queryFn: () => apiFetch<Community>(`/communities/${id}`),
+    });
 
     const { data, isPending, isError, error, fetchNextPage, hasNextPage, isFetchingNextPage } =
         useInfiniteQuery({
@@ -54,8 +61,9 @@ function CommunityPage() {
     }
 
     const posts = data.pages.flatMap((page) => page.items);
-    // The community's name rides along on each post; read it off the first, or fall back.
-    const communityName = posts[0]?.community.name ?? 'Community';
+    // Prefer the community query's name; fall back to the name riding on the first post (usually
+    // available sooner, since both requests race), then a generic label.
+    const communityName = communityQuery.data?.name ?? posts[0]?.community.name ?? 'Community';
 
     return (
         <div className="pt-6 pb-16">

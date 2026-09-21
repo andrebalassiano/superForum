@@ -36,6 +36,19 @@ export function PostCardSkeleton() {
     );
 }
 
+// A bordered list of placeholder rows — mirrors the communities list.
+export function ListSkeleton({ rows = 5 }: { rows?: number }) {
+    return (
+        <div className="divide-y divide-border rounded-lg border border-border">
+            {Array.from({ length: rows }, (_, i) => (
+                <div key={i} className="px-4 py-3">
+                    <Bar className="h-4 w-40 rounded" />
+                </div>
+            ))}
+        </div>
+    );
+}
+
 // Mirrors a comment row: author line, then a content line.
 export function CommentSkeleton() {
     return (
