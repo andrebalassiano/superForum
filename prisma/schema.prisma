@@ -2,8 +2,12 @@
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
 generator client {
-  provider = "prisma-client"
-  output   = "../src/generated/prisma"
+  provider     = "prisma-client"
+  output       = "../src/generated/prisma"
+  // The project compiles to CommonJS (no "type": "module"), so the generated client must too.
+  // The default ("esm") emits `import.meta.url`, which Node's module detection reads as ESM and
+  // then crashes on `exports` when running the tsc build with plain `node dist/server.js`.
+  moduleFormat = "cjs"
 }
 
 datasource db {
