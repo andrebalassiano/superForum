@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router';
+import { Link, useNavigate, useSearchParams } from 'react-router';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiFetch } from '../api';
 import { useAuth } from '../auth/AuthContext';
@@ -14,8 +14,11 @@ function NewPostPage() {
     const { user } = useAuth();
     const navigate = useNavigate();
     const queryClient = useQueryClient();
+    const [searchParams] = useSearchParams();
 
-    const [communityId, setCommunityId] = useState('');
+    // ?community=<id> preselects the picker — how the "new community" page hands back a community
+    // it just created for someone who started here. useState only reads its initial value once.
+    const [communityId, setCommunityId] = useState(searchParams.get('community') ?? '');
     const [title, setTitle] = useState('');
     const [content, setContent] = useState('');
 
@@ -81,6 +84,16 @@ function NewPostPage() {
                         ))}
                     </select>
                 </Field>
+                {/* -mt-2 tucks this under the picker as a footnote rather than a row of its own. */}
+                <p className="-mt-2 text-sm text-muted">
+                    Don't see the one you want?{' '}
+                    <Link
+                        to="/communities/new?then=post"
+                        className="text-accent no-underline hover:underline"
+                    >
+                        Create a community
+                    </Link>
+                </p>
 
                 <Field label="Title">
                     <input

@@ -1,6 +1,8 @@
 import { Link } from 'react-router';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { apiFetch, PAGE_SIZE } from '../api';
+import { useAuth } from '../auth/AuthContext';
+import { buttonClasses } from '../components/buttonStyles';
 import type { Community, Page } from '../types';
 import { ListSkeleton, EmptyState, ErrorMessage } from '../components/states';
 import { useInfiniteScroll } from '../hooks/useInfiniteScroll';
@@ -9,6 +11,7 @@ import { useInfiniteScroll } from '../hooks/useInfiniteScroll';
 // otherwise only reachable by already knowing a community's URL. Same paginated infinite-scroll
 // pattern as the feeds.
 function CommunitiesPage() {
+    const { user } = useAuth();
     const { data, isPending, isError, error, fetchNextPage, hasNextPage, isFetchingNextPage } =
         useInfiniteQuery({
             queryKey: ['communities'],
@@ -25,7 +28,17 @@ function CommunitiesPage() {
         hasNextPage && !isFetchingNextPage,
     );
 
-    const heading = <h1 className="mb-4 text-2xl font-semibold">Communities</h1>;
+    // Heading row: title left, the create action right (signed-in only, like "New post").
+    const heading = (
+        <div className="mb-4 flex items-center justify-between">
+            <h1 className="text-2xl font-semibold">Communities</h1>
+            {user && (
+                <Link to="/communities/new" className={buttonClasses('secondary')}>
+                    New community
+                </Link>
+            )}
+        </div>
+    );
 
     if (isPending) {
         return (

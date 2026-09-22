@@ -8,6 +8,7 @@ import CommunityPage from './pages/CommunityPage';
 import CommunitiesPage from './pages/CommunitiesPage';
 import LoginPage from './pages/LoginPage';
 import NewPostPage from './pages/NewPostPage';
+import NewCommunityPage from './pages/NewCommunityPage';
 
 // App is the shell: a sticky header on every page plus a <Routes> block that swaps the page by URL.
 function App() {
@@ -82,6 +83,8 @@ function App() {
                     <Route path="/" element={<FeedPage />} />
                     <Route path="/posts/:id" element={<PostPage />} />
                     <Route path="/communities" element={<CommunitiesPage />} />
+                    {/* Static segment outranks the dynamic :id below, whatever the order. */}
+                    <Route path="/communities/new" element={<NewCommunityPage />} />
                     <Route path="/communities/:id" element={<CommunityPage />} />
                     <Route path="/login" element={<LoginPage />} />
                     <Route path="/submit" element={<NewPostPage />} />
