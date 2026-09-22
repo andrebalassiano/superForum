@@ -12,6 +12,8 @@ npm run dev                  # starts on http://localhost:5173
 
 The API has to be running too (`npm run dev` at the repository root, on port 3000) — the client reads from it, and the API's CORS allowlist already expects the Vite dev server's origin. Only `VITE_`-prefixed variables reach browser code, and everything that does is compiled into the bundle, so `.env.local` holds the publishable key and nothing secret.
 
+A deployed build is made with `VITE_API_URL` set to the live API's address; locally it falls back to `http://localhost:3000/api`. That API runs on Render's free tier, which sleeps after about fifteen minutes idle, so the first load after a quiet spell can take up to a minute while it wakes — the skeleton placeholders cover the wait, and it's normal speed after that.
+
 ```bash
 npm run build     # type-check and bundle to dist/
 npm run lint      # oxlint

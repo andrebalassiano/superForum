@@ -108,9 +108,15 @@ The same suite runs on every push and pull request through GitHub Actions — th
 
 There's also an opt-in **real-token** lane (`npm run test:realtoken`) that skips the mock entirely: it signs a real user into Supabase, gets a genuine JWT, and drives it through the auth middleware for real. It's gated on credentials — without a `.env.test.realtoken` it simply skips, so the default run and CI never need secrets.
 
+## Deployment
+
+The app deploys as three separately hosted pieces, all on free tiers: the client on Vercel as static files, the API on Render as a Node service, and Supabase, which already hosts the database and auth. Each half reads its deploy-only configuration from the environment — the client needs `VITE_API_URL` pointing at the live API, and the API needs `CORS_ORIGIN` to include the client's origin, `TRUST_PROXY=1` so rate limiting sees real client addresses behind Render's proxy, and whatever `PORT` the host assigns. `GET /api/health` runs a real database query and doubles as the host's health check.
+
+One thing to expect from the free tiers: Render spins the API down after about fifteen minutes without traffic, so the first request after a quiet spell takes somewhere between thirty seconds and a minute while it wakes up. The client shows its loading skeletons in the meantime, and everything runs at normal speed once it's awake. Separately, Supabase pauses an idle free-tier database after a week; a scheduled GitHub Action (`keep-warm.yml`) pings the health endpoint every few days so that never happens.
+
 ## Still to come
 
-Both halves are complete and working end to end. What's left is polish on the client rather than anything structural — finishing the visual pass, a page for browsing communities, and better loading and empty states. The client also doesn't have a test suite yet; the badges at the top cover the API only, and closing that gap is the next real piece of work.
+Both halves are complete and working end to end, and the client's visual pass is done: the feed, communities, posts, and comments all have proper loading, empty, and error states, and the whole thing is responsive and keyboard-accessible. The one real gap left is that the client has no test suite yet; the badges at the top cover the API only, and closing that is the next piece of work.
 
 ## Credits
 

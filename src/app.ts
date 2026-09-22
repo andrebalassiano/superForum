@@ -6,6 +6,15 @@ import { createRateLimiter } from './middleware/rateLimiter';
 
 const app = express();
 
+// Behind a host's reverse proxy (Render, Railway, Fly), the socket's IP is the proxy's, not the
+// client's — the real one arrives in X-Forwarded-For. TRUST_PROXY tells Express how many proxy hops
+// to trust when resolving req.ip, so the rate limiter keys on the real client rather than lumping
+// everyone under the proxy's address. Unset locally (no proxy), typically "1" when deployed.
+const trustProxy = Number(process.env.TRUST_PROXY);
+if (trustProxy > 0) {
+    app.set('trust proxy', trustProxy);
+}
+
 // Allow browser clients from an explicit origin allowlist (comma-separated CORS_ORIGIN, defaulting
 // to the Vite dev server). Without this a browser SPA on another origin would be blocked by the
 // same-origin policy; non-browser clients (Postman, the test suite) are unaffected either way.

@@ -1,8 +1,10 @@
 import { supabase } from './lib/supabase';
 
-// The base URL of the backend, in one place. Still a literal for now; a later step moves it to a
-// Vite env var (import.meta.env) so dev and production can point at different backends.
-export const API_URL = 'http://localhost:3000/api';
+// The base URL of the backend, in one place. Read from a Vite env var so dev and production point at
+// different backends: locally it falls back to the dev server, and a deployed build sets
+// VITE_API_URL to the live API. (Like every VITE_ var, this is baked into the bundle at build time
+// and public — fine, since it's just a URL.)
+export const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3000/api';
 
 // How many posts each feed page requests. Deliberately small so pagination is visible without
 // needing hundreds of posts; a real feed would use something larger (the backend caps limit at 100).
