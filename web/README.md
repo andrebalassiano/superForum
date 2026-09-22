@@ -1,6 +1,6 @@
 # superForum — web client
 
-The React single-page client for superForum. It's a self-contained project: its own dependencies, its own TypeScript config, its own linter. The API it talks to lives at the repository root.
+The React single-page client for superForum, live at [superforum.vercel.app](https://superforum.vercel.app). It's a self-contained project: its own dependencies, its own TypeScript config, its own linter. The API it talks to lives at the repository root.
 
 React with TypeScript, built by Vite. Routing is React Router, server state is TanStack Query, auth is `@supabase/supabase-js`, and styling is Tailwind over a small set of semantic design tokens.
 

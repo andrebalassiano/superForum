@@ -5,6 +5,8 @@
 
 superForum is a Reddit-style forum. It lets people register, spin up communities, write posts and comments, and vote on them. It comes in two halves: a REST API written in TypeScript on Express 5, with Prisma 7 talking to a Postgres database and Supabase handling authentication, and a React single-page client built against it. Every write is authenticated with a server-verified JWT and validated with Zod before it reaches the database.
 
+It's live at [superforum.vercel.app](https://superforum.vercel.app). The API behind it runs on a free tier that sleeps when idle, so the first load after a quiet spell can take up to a minute.
+
 I built it partly as a learning project and partly as a reference for how I like to structure a Node backend, so the emphasis throughout is on a clean, predictable layout rather than clever shortcuts. The API lives at the repository root; the client lives in `web/` as a self-contained project with its own toolchain.
 
 ## How it's organized
@@ -110,7 +112,7 @@ There's also an opt-in **real-token** lane (`npm run test:realtoken`) that skips
 
 ## Deployment
 
-The app deploys as three separately hosted pieces, all on free tiers: the client on Vercel as static files, the API on Render as a Node service, and Supabase, which already hosts the database and auth. Each half reads its deploy-only configuration from the environment — the client needs `VITE_API_URL` pointing at the live API, and the API needs `CORS_ORIGIN` to include the client's origin, `TRUST_PROXY=1` so rate limiting sees real client addresses behind Render's proxy, and whatever `PORT` the host assigns. `GET /api/health` runs a real database query and doubles as the host's health check.
+The app deploys as three separately hosted pieces, all on free tiers: the client on Vercel as static files at [superforum.vercel.app](https://superforum.vercel.app), the API on Render as a Node service at `superforum-api.onrender.com`, and Supabase, which already hosts the database and auth. Vercel builds from `web/` with a one-line `vercel.json` rewrite so every path serves `index.html` and React Router owns the URL; Render's build installs dev dependencies explicitly (`npm ci --include=dev`) because the compiler and type packages are needed to build even though `NODE_ENV=production` would normally skip them, then generates the Prisma client, applies pending migrations, and compiles. Each half reads its deploy-only configuration from the environment — the client needs `VITE_API_URL` pointing at the live API, and the API needs `CORS_ORIGIN` to include the client's origin, `TRUST_PROXY=1` so rate limiting sees real client addresses behind Render's proxy, and whatever `PORT` the host assigns. `GET /api/health` runs a real database query and doubles as the host's health check.
 
 One thing to expect from the free tiers: Render spins the API down after about fifteen minutes without traffic, so the first request after a quiet spell takes somewhere between thirty seconds and a minute while it wakes up. The client shows its loading skeletons in the meantime, and everything runs at normal speed once it's awake. Separately, Supabase pauses an idle free-tier database after a week; a scheduled GitHub Action (`keep-warm.yml`) pings the health endpoint every few days so that never happens.
 
