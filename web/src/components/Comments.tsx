@@ -4,12 +4,121 @@ import { apiFetch, PAGE_SIZE } from '../api';
 import { useAuth } from '../auth/AuthContext';
 import { useInfiniteScroll } from '../hooks/useInfiniteScroll';
 import Button from './Button';
+import OwnerActions from './OwnerActions';
 import { inputClasses } from './forms';
 import { CommentSkeleton, EmptyState, ErrorMessage } from './states';
+import { timeAgo } from '../lib/time';
 import type { Comment, Page } from '../types';
 
 interface CommentsProps {
     postId: string;
+}
+
+// One comment in the thread, with edit and delete for whoever wrote it. It's a separate component
+// because each row needs its own editing state and its own two mutations — keeping that inside the
+// list's map would mean hooks in a loop, which React doesn't allow.
+function CommentItem({ comment, postId }: { comment: Comment; postId: string }) {
+    const { user } = useAuth();
+    const queryClient = useQueryClient();
+    const [editing, setEditing] = useState(false);
+    const [draft, setDraft] = useState(comment.content);
+
+    // Both mutations refresh the same two things: the thread, and the post (whose comment count
+    // changes on delete).
+    function refresh() {
+        void queryClient.invalidateQueries({ queryKey: ['comments', postId] });
+        void queryClient.invalidateQueries({ queryKey: ['post', postId] });
+    }
+
+    const updateComment = useMutation({
+        mutationFn: () =>
+            apiFetch<Comment>(`/comments/${comment.id}`, {
+                method: 'PATCH',
+                body: { content: draft },
+            }),
+        onSuccess: () => {
+            setEditing(false);
+            refresh();
+        },
+    });
+
+    const deleteComment = useMutation({
+        mutationFn: () => apiFetch<void>(`/comments/${comment.id}`, { method: 'DELETE' }),
+        onSuccess: refresh,
+    });
+
+    const isAuthor = !!user && user.id === comment.authorId;
+
+    return (
+        <article className="border-t border-border py-3">
+            <p className="mb-1 text-xs text-muted">
+                <span className="font-medium text-accent">{comment.author.username}</span> ·{' '}
+                {timeAgo(comment.createdAt)}
+            </p>
+
+            {editing ? (
+                <form
+                    className="flex flex-col gap-2"
+                    onSubmit={(e) => {
+                        e.preventDefault();
+                        if (draft.trim()) updateComment.mutate();
+                    }}
+                >
+                    <textarea
+                        aria-label="Edit comment"
+                        className={`${inputClasses} resize-y`}
+                        value={draft}
+                        onChange={(e) => setDraft(e.target.value)}
+                        rows={3}
+                    />
+                    {updateComment.isError && (
+                        <ErrorMessage>{updateComment.error.message}</ErrorMessage>
+                    )}
+                    <div className="flex gap-2">
+                        <Button
+                            type="submit"
+                            className="px-3 py-1"
+                            disabled={updateComment.isPending || draft.trim() === ''}
+                        >
+                            {updateComment.isPending ? 'Saving...' : 'Save'}
+                        </Button>
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            className="px-2 py-1"
+                            onClick={() => {
+                                // Drop the edit — put the draft back to what's on the server.
+                                setDraft(comment.content);
+                                setEditing(false);
+                            }}
+                            disabled={updateComment.isPending}
+                        >
+                            Cancel
+                        </Button>
+                    </div>
+                </form>
+            ) : (
+                <>
+                    <p className="wrap-break-word whitespace-pre-wrap text-heading">
+                        {comment.content}
+                    </p>
+                    {isAuthor && (
+                        <div className="mt-1 -ml-2">
+                            <OwnerActions
+                                label="comment"
+                                onEdit={() => setEditing(true)}
+                                onDelete={() => deleteComment.mutate()}
+                                isDeleting={deleteComment.isPending}
+                            />
+                        </div>
+                    )}
+                    {deleteComment.isError && (
+                        <ErrorMessage>{deleteComment.error.message}</ErrorMessage>
+                    )}
+                </>
+            )}
+        </article>
+    );
 }
 
 // The comment thread for one post: a paginated list (same infinite-scroll pattern as the feeds) plus
@@ -107,16 +216,7 @@ function Comments({ postId }: CommentsProps) {
                 (comments.length === 0 ? (
                     <EmptyState title="No comments yet" hint="Start the conversation." />
                 ) : (
-                    comments.map((c) => (
-                        <article key={c.id} className="border-t border-border py-3">
-                            <p className="mb-1 text-xs font-medium text-accent">
-                                {c.author.username}
-                            </p>
-                            <p className="wrap-break-word whitespace-pre-wrap text-heading">
-                                {c.content}
-                            </p>
-                        </article>
-                    ))
+                    comments.map((c) => <CommentItem key={c.id} comment={c} postId={postId} />)
                 ))}
 
             {hasNextPage && (

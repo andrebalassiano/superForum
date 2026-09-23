@@ -15,6 +15,7 @@ function makePost(overrides: Partial<Post> = {}): Post {
         content: 'Some body text.',
         score: 7,
         createdAt: new Date().toISOString(),
+        authorId: 'user-1',
         author: { username: 'alice' },
         community: { id: 'community-1', name: 'general' },
         _count: { comments: 3 },

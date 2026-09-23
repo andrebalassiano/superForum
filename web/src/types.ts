@@ -10,6 +10,10 @@ export interface Post {
     content: string;
     score: number;
     createdAt: string;
+    // The author's Supabase user id, which is also their Profile id. The API has always returned it;
+    // the UI needs it to decide whether to offer edit and delete. The server enforces the same rule
+    // independently — this only controls what's shown.
+    authorId: string;
     author: { username: string };
     community: { id: string; name: string };
     _count: { comments: number };
@@ -23,6 +27,7 @@ export interface Comment {
     content: string;
     score: number;
     createdAt: string;
+    authorId: string;
     author: { username: string };
     currentUserVote: number | null;
 }

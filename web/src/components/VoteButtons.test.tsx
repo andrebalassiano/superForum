@@ -16,6 +16,7 @@ const POST: Post = {
     content: 'Body',
     score: 5,
     createdAt: new Date().toISOString(),
+    authorId: 'user-1',
     author: { username: 'alice' },
     community: { id: 'community-1', name: 'general' },
     _count: { comments: 0 },
