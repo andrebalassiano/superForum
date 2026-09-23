@@ -26,43 +26,79 @@ export class ApiError extends Error {
     }
 }
 
+interface RequestOptions {
+    method?: string;
+    body?: unknown;
+}
+
+function buildRequest(token: string | undefined, options?: RequestOptions): RequestInit {
+    const headers: Record<string, string> = {};
+    if (token) headers.Authorization = `Bearer ${token}`;
+    if (options?.body !== undefined) headers['Content-Type'] = 'application/json';
+
+    return {
+        method: options?.method ?? 'GET',
+        headers,
+        body: options?.body !== undefined ? JSON.stringify(options.body) : undefined,
+    };
+}
+
+async function readError(res: Response): Promise<ApiError> {
+    // Prefer the backend's own message (that consistent error envelope paying off); fall back
+    // to the HTTP status if the body isn't the shape we expect.
+    let message = `Request failed (${res.status})`;
+    try {
+        const body = (await res.json()) as { error?: { message?: string } };
+        if (body.error?.message) message = body.error.message;
+    } catch {
+        // error response had no JSON body — keep the status message
+    }
+    return new ApiError(message, res.status);
+}
+
+async function parse<T>(res: Response): Promise<T> {
+    // 204 No Content (e.g. a successful DELETE vote) has no body to parse.
+    if (res.status === 204) return undefined as T;
+    return (await res.json()) as T;
+}
+
 // One choke point for every API call — the frontend mirror of the backend's middleware layer. It
 // attaches the signed-in user's JWT, sets the method/body for writes, checks the response, unwraps
 // the backend's { error: { message } } envelope into a thrown Error, and returns parsed JSON.
-export async function apiFetch<T>(
-    path: string,
-    options?: { method?: string; body?: unknown },
-): Promise<T> {
+export async function apiFetch<T>(path: string, options?: RequestOptions): Promise<T> {
     // Grab the current session's access token (the JWT). getSession reads the cached session and
     // refreshes the token if it's expired, so requests always carry a valid one — or none, when the
     // user is anonymous, which the backend's optionalAuth handles gracefully.
     const { data } = await supabase.auth.getSession();
     const token = data.session?.access_token;
 
-    const headers: Record<string, string> = {};
-    if (token) headers.Authorization = `Bearer ${token}`;
-    if (options?.body !== undefined) headers['Content-Type'] = 'application/json';
+    const res = await fetch(`${API_URL}${path}`, buildRequest(token, options));
+    if (res.ok) return parse<T>(res);
 
-    const res = await fetch(`${API_URL}${path}`, {
-        method: options?.method ?? 'GET',
-        headers,
-        body: options?.body !== undefined ? JSON.stringify(options.body) : undefined,
-    });
+    // A 401 while we believed we were signed in means the stored session is no longer good — the
+    // access token expired and wasn't refreshed in time, or the refresh token was rotated out from
+    // under us (opening the app in several tabs can do that: they race to refresh, and Supabase
+    // treats a reused refresh token as a stolen one and revokes the session).
+    //
+    // Left alone this is a bad state to be in: the client still holds a session object, so the UI
+    // looks signed in and every write fails with a confusing message. So try once to get a fresh
+    // token and replay the request; if that doesn't work, the session really is gone — sign out so
+    // the app's state matches reality and the header offers a way back in.
+    if (res.status === 401 && token) {
+        const { data: refreshed } = await supabase.auth.refreshSession();
+        const newToken = refreshed.session?.access_token;
 
-    if (!res.ok) {
-        // Prefer the backend's own message (that consistent error envelope paying off); fall back
-        // to the HTTP status if the body isn't the shape we expect.
-        let message = `Request failed (${res.status})`;
-        try {
-            const body = (await res.json()) as { error?: { message?: string } };
-            if (body.error?.message) message = body.error.message;
-        } catch {
-            // error response had no JSON body — keep the status message
+        if (newToken) {
+            const retry = await fetch(`${API_URL}${path}`, buildRequest(newToken, options));
+            if (retry.ok) return parse<T>(retry);
+            if (retry.status !== 401) throw await readError(retry);
         }
-        throw new ApiError(message, res.status);
+
+        // signOut updates the Supabase client, which fires onAuthStateChange; AuthProvider clears
+        // the session and drops every cached query, so the whole UI returns to a signed-out state.
+        await supabase.auth.signOut();
+        throw new ApiError('Your session has expired — please sign in again.', 401);
     }
 
-    // 204 No Content (e.g. a successful DELETE vote) has no body to parse.
-    if (res.status === 204) return undefined as T;
-    return res.json() as Promise<T>;
+    throw await readError(res);
 }
