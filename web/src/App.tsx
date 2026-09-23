@@ -3,6 +3,7 @@ import { useAuth } from './auth/AuthContext';
 import { useProfile } from './auth/useProfile';
 import Button from './components/Button';
 import { buttonClasses } from './components/buttonStyles';
+import { PlusIcon, SignOutIcon } from './components/icons';
 import FeedPage from './pages/FeedPage';
 import PostPage from './pages/PostPage';
 import CommunityPage from './pages/CommunityPage';
@@ -66,15 +67,30 @@ function App() {
                         {user ? (
                             <>
                                 {/* Primary action — visually distinct from the account controls. A
-                                    Link styled as a button via the shared buttonClasses. */}
-                                <Link to="/submit" className={buttonClasses('primary')}>
-                                    New post
+                                    Link styled as a button via the shared buttonClasses.
+
+                                    On a phone both actions collapse to icons: the labels wrapped to
+                                    two lines and crowded the bar. The aria-label carries the name
+                                    either way, so the accessible name never depends on the width. */}
+                                <Link
+                                    to="/submit"
+                                    aria-label="New post"
+                                    className={buttonClasses('primary', 'px-2.5 sm:px-4')}
+                                >
+                                    <PlusIcon className="h-5 w-5 sm:hidden" />
+                                    <span className="hidden sm:inline">New post</span>
                                 </Link>
                                 <span className="hidden text-sm text-muted sm:inline">
                                     {user.email}
                                 </span>
-                                <Button variant="ghost" onClick={() => void signOut()}>
-                                    Sign out
+                                <Button
+                                    variant="ghost"
+                                    onClick={() => void signOut()}
+                                    aria-label="Sign out"
+                                    className="px-2 sm:px-4"
+                                >
+                                    <SignOutIcon className="h-5 w-5 sm:hidden" />
+                                    <span className="hidden sm:inline">Sign out</span>
                                 </Button>
                             </>
                         ) : (

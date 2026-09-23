@@ -31,6 +31,41 @@ export function Thumb({
     );
 }
 
+// The two header actions, drawn instead of labelled once the bar gets narrow. Both are decorative
+// here (aria-hidden) because the control around them carries an aria-label.
+export function PlusIcon({ className = 'h-5 w-5' }: { className?: string }) {
+    return (
+        <svg
+            viewBox="0 0 24 24"
+            className={className}
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={2}
+            strokeLinecap="round"
+            aria-hidden="true"
+        >
+            <path d="M12 5v14M5 12h14" />
+        </svg>
+    );
+}
+
+export function SignOutIcon({ className = 'h-5 w-5' }: { className?: string }) {
+    return (
+        <svg
+            viewBox="0 0 24 24"
+            className={className}
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={1.8}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+        >
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9" />
+        </svg>
+    );
+}
+
 export function CommentIcon({ className = 'h-4 w-4' }: { className?: string }) {
     return (
         <svg
