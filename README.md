@@ -106,7 +106,9 @@ cp .env.test.example .env.test
 npm test                                          # or: npm run test:coverage
 ```
 
-The same suite runs on every push and pull request through GitHub Actions — that's what the CI and coverage badges at the top report.
+The client has its own, smaller suite — Vitest with React Testing Library, run with `npm test` inside `web/`. It covers the parts where a mistake is quiet rather than loud: the relative-time formatter at each of its boundaries, what a feed card renders and where its links point, and the optimistic voting logic. That last one is the interesting one to write. `VoteButtons` doesn't keep the score in component state — it writes the guessed result straight into the query cache so one vote updates the feed, the community feed, and the post page at once, and puts the old values back if the request fails. So the tests assert against the cache rather than the rendered number: that's where the behaviour actually lives, and a test that only read the DOM would miss the other two views entirely. The API is mocked at the `apiFetch` boundary, the same seam the backend suite mocks Supabase at.
+
+Both suites run on every push and pull request through GitHub Actions, as two parallel jobs — that's what the CI badge at the top reports. (The coverage badge covers the API only.)
 
 There's also an opt-in **real-token** lane (`npm run test:realtoken`) that skips the mock entirely: it signs a real user into Supabase, gets a genuine JWT, and drives it through the auth middleware for real. It's gated on credentials — without a `.env.test.realtoken` it simply skips, so the default run and CI never need secrets.
 
@@ -118,7 +120,7 @@ One thing to expect from the free tiers: Render spins the API down after about f
 
 ## Still to come
 
-Both halves are complete and working end to end, and the client's visual pass is done: the feed, communities, posts, and comments all have proper loading, empty, and error states, and the whole thing is responsive and keyboard-accessible. The one real gap left is that the client has no test suite yet; the badges at the top cover the API only, and closing that is the next piece of work.
+Both halves are complete and working end to end, and the client's visual pass is done: the feed, communities, posts, and comments all have proper loading, empty, and error states, and the whole thing is responsive and keyboard-accessible. What's left is mostly breadth rather than gaps — the client's tests cover its trickiest logic but not yet its pages, comments are a flat list rather than a nested thread, and there's no search. Screenshots in this README are the next thing after that.
 
 ## Credits
 

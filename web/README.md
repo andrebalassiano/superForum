@@ -17,6 +17,9 @@ A deployed build is made with `VITE_API_URL` set to the live API's address; loca
 ```bash
 npm run build     # type-check and bundle to dist/
 npm run lint      # oxlint
+npm test          # Vitest + React Testing Library (npm run test:watch to keep it open)
 ```
+
+The tests run in jsdom against a helper that supplies the three things most components assume above them — a router, a query client, and the auth context — and they mock `src/api.ts`, so nothing reaches the network. Where a component's real behaviour is a cache write rather than a rendered value, as with optimistic voting, the assertions are against the query cache.
 
 The [root README](../README.md) explains the client's design decisions — the two mutation strategies, how auth threads through, and how the theme tokens drive dark mode — alongside the API they're built against.

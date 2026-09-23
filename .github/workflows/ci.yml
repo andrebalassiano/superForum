@@ -2,6 +2,10 @@
 # a fresh Ubuntu VM, stands up a throwaway Postgres, installs the project from scratch,
 # and runs the type-check, lint, format check, and Vitest suite. A non-zero exit from any step fails the run
 # (the red/green status the README badge and PR checks read from).
+#
+# Two jobs, one per half of the repo: `test` covers the API at the root, `web` covers the React
+# client in web/. They run in parallel — nothing the client does depends on the API's database, and
+# a failure in either fails the run.
 name: CI
 
 on:
@@ -89,3 +93,39 @@ jobs:
                   token: ${{ secrets.CODECOV_TOKEN }}
                   files: ./coverage/lcov.info
                   fail_ci_if_error: false
+
+    # The React client. No database and no Supabase credentials: its tests mock the api module, so
+    # nothing here reaches the network. `npm run build` is the type-check too — the build script is
+    # `tsc -b && vite build`, so a type error fails the job before Vercel would ever see it.
+    web:
+        runs-on: ubuntu-latest
+
+        # Every run step happens inside web/, which is its own npm project.
+        defaults:
+            run:
+                working-directory: web
+
+        steps:
+            - name: Check out the repo
+              uses: actions/checkout@v4
+
+            - name: Set up Node
+              uses: actions/setup-node@v4
+              with:
+                  node-version: '24'
+                  cache: npm
+                  # The cache key defaults to a lockfile at the repo root, which is the API's.
+                  # Point it at the client's so the two jobs cache separately.
+                  cache-dependency-path: web/package-lock.json
+
+            - name: Install dependencies
+              run: npm ci
+
+            - name: Lint
+              run: npm run lint
+
+            - name: Run tests
+              run: npm test
+
+            - name: Build
+              run: npm run build
