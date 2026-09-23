@@ -7,6 +7,8 @@ superForum is a Reddit-style forum. It lets people register, spin up communities
 
 It's live at [superforum.vercel.app](https://superforum.vercel.app). The API behind it runs on a free tier that sleeps when idle, so the first load after a quiet spell can take up to a minute.
 
+![The superForum feed](.github/images/feed-dark.png)
+
 I built it partly as a learning project and partly as a reference for how I like to structure a Node backend, so the emphasis throughout is on a clean, predictable layout rather than clever shortcuts. The API lives at the repository root; the client lives in `web/` as a self-contained project with its own toolchain.
 
 ## How it's organized
@@ -65,9 +67,20 @@ Server data is handled by TanStack Query rather than hand-rolled fetching in `us
 
 Writes use two different strategies on purpose. Voting is **optimistic**: clicking a thumb updates the cached post immediately — in the feed, in the community view, and on the post page at once — applying the same score delta the server will, and rolling every cache back from a snapshot if the request fails. Creating a comment or a post instead **invalidates and refetches**, because the server assigns the id and the timestamp and there's nothing useful to guess at. Knowing which of those two a given write wants is most of what using a query cache well amounts to.
 
+![A post with its comment thread](.github/images/post.png)
+
+A post page, seen by the account that wrote it: edit and delete appear on anything of your own, on the post and on each comment. Which of them show is a rendering decision only — the API re-checks ownership on every write and answers `403` regardless of what the client drew.
+
 Auth is the client half of the same JWT the API validates. `@supabase/supabase-js` handles sign-in and holds the session, refreshing the token on its own; a small React context makes the current user available anywhere without threading props; and the fetch wrapper attaches the token to every request, which is what makes personalized reads like `currentUserVote` come back filled in. Signing in or out invalidates the cache, so nothing personalized is left stale.
 
 Styling is Tailwind over a small set of semantic design tokens. The palette lives as CSS variables that flip for dark mode and is handed to Tailwind through `@theme`, so light and dark are handled by the tokens themselves rather than by a `dark:` variant hung on every element.
+
+<p>
+  <img src=".github/images/feed-light.png" alt="The feed in light mode" width="500">
+  <img src=".github/images/mobile.png" alt="The feed on a phone" width="180">
+</p>
+
+The same feed in light mode, and at phone width — where the header's labelled actions collapse to icons that keep their accessible names.
 
 ## Running it locally
 
