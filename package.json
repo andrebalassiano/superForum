@@ -19,6 +19,7 @@
     "lint:fix": "eslint . --fix",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
+    "seed": "tsx prisma/seed.ts",
     "dev": "tsx src/server.ts",
     "dev:watch": "tsx watch src/server.ts"
   },

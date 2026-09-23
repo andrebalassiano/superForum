@@ -5,6 +5,13 @@ import Button from '../components/Button';
 import { Field, inputClasses } from '../components/forms';
 import { ErrorMessage } from '../components/states';
 
+// A shared account so someone can try posting and voting without signing up. Both variables are
+// baked into the bundle, which is why the account holds nothing private and why the credentials are
+// printed on the page rather than hidden in it — a password a visitor is meant to use is not a
+// secret. Unset either one (the normal local setup) and none of this renders.
+const DEMO_EMAIL = import.meta.env.VITE_DEMO_EMAIL;
+const DEMO_PASSWORD = import.meta.env.VITE_DEMO_PASSWORD;
+
 function LoginPage() {
     const { signIn, signUp } = useAuth();
     const navigate = useNavigate(); // lets us redirect in code (after a successful sign-in)
@@ -26,6 +33,20 @@ function LoginPage() {
                 await signUp(email, password, username);
             }
             navigate('/'); // success → back to the feed
+        } catch (err: unknown) {
+            setError(err instanceof Error ? err.message : 'Something went wrong');
+        } finally {
+            setSubmitting(false);
+        }
+    }
+
+    async function handleDemo() {
+        if (!DEMO_EMAIL || !DEMO_PASSWORD) return;
+        setError(null);
+        setSubmitting(true);
+        try {
+            await signIn(DEMO_EMAIL, DEMO_PASSWORD);
+            navigate('/');
         } catch (err: unknown) {
             setError(err instanceof Error ? err.message : 'Something went wrong');
         } finally {
@@ -92,6 +113,26 @@ function LoginPage() {
                     {submitting ? 'Working...' : mode === 'signin' ? 'Sign in' : 'Sign up'}
                 </Button>
             </form>
+
+            {DEMO_EMAIL && DEMO_PASSWORD && (
+                <div className="mt-6 rounded-lg border border-border p-4">
+                    <p className="mb-3 text-sm text-muted">
+                        Just looking around? Use the shared demo account — you can post, comment,
+                        and vote with it.
+                    </p>
+                    <Button
+                        type="button"
+                        variant="secondary"
+                        onClick={() => void handleDemo()}
+                        disabled={submitting}
+                    >
+                        Try the demo
+                    </Button>
+                    <p className="mt-3 text-xs text-muted">
+                        {DEMO_EMAIL} / {DEMO_PASSWORD}
+                    </p>
+                </div>
+            )}
 
             <Button
                 type="button"
