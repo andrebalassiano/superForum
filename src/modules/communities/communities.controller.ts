@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import communitiesService, { FORBIDDEN } from './communities.service';
+import communitiesService, { FORBIDDEN, PROFILE_NOT_FOUND } from './communities.service';
 import { CreateCommunityDTO, IdParamsDTO, UpdateCommunityDTO } from './communities.schemas';
 
 const communitiesController = {
@@ -12,6 +12,13 @@ const communitiesController = {
         try {
             // ownerId comes from the verified token, not the client
             const community = await communitiesService.createCommunity(req.user.id, req.body);
+
+            // caller authenticated but never created their Profile row — tell them precisely
+            if (community === PROFILE_NOT_FOUND) {
+                return res
+                    .status(404)
+                    .json({ message: 'Profile not found — create your profile first' });
+            }
 
             // service returns null when the name is already taken — translate that into a 409 Conflict
             if (!community) {

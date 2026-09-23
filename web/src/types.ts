@@ -27,6 +27,14 @@ export interface Comment {
     currentUserVote: number | null;
 }
 
+// The caller's own profile, as GET /auth/me returns it. Its id IS the Supabase user id — the row
+// that links an authenticated identity to everything they write. Signing up with Supabase does not
+// create it; POST /auth/profile does.
+export interface Profile {
+    id: string;
+    username: string;
+}
+
 // A community, as GET /communities returns it — just what the "new post" picker needs.
 export interface Community {
     id: string;

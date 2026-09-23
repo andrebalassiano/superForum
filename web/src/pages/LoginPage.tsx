@@ -11,6 +11,7 @@ function LoginPage() {
 
     const [mode, setMode] = useState<'signin' | 'signup'>('signin');
     const [email, setEmail] = useState('');
+    const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState<string | null>(null);
     const [submitting, setSubmitting] = useState(false);
@@ -22,7 +23,7 @@ function LoginPage() {
             if (mode === 'signin') {
                 await signIn(email, password);
             } else {
-                await signUp(email, password);
+                await signUp(email, password, username);
             }
             navigate('/'); // success → back to the feed
         } catch (err: unknown) {
@@ -59,6 +60,21 @@ function LoginPage() {
                         required
                     />
                 </Field>
+                {/* Sign-up only: the public name on every post and comment. The backend trims it,
+                    requires at least one character, and answers 409 if it's taken. */}
+                {mode === 'signup' && (
+                    <Field label="Username">
+                        <input
+                            type="text"
+                            className={inputClasses}
+                            value={username}
+                            onChange={(e) => setUsername(e.target.value)}
+                            autoComplete="username"
+                            required
+                        />
+                    </Field>
+                )}
+
                 <Field label="Password">
                     <input
                         type="password"

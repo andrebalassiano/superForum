@@ -1,4 +1,5 @@
 import communitiesRepository from './communities.repository';
+import authRepository from '../auth/auth.repository';
 import { Prisma } from '../../generated/prisma/client';
 import { CreateCommunityDTO, UpdateCommunityDTO } from './communities.schemas';
 import { buildPage, PaginationQueryDTO } from '../../core/pagination';
@@ -7,9 +8,19 @@ import { buildPage, PaginationQueryDTO } from '../../core/pagination';
 // Distinct from null, which means "no such community" → 404.
 export const FORBIDDEN = 'FORBIDDEN' as const;
 
+// Returned by createCommunity when the caller's Profile row doesn't exist yet — they authenticated
+// with Supabase but never ran POST /auth/profile. Same sentinel the posts, comments, and votes
+// modules use; without it the owner connect throws P2025 and surfaces as an opaque 500.
+export const PROFILE_NOT_FOUND = 'PROFILE_NOT_FOUND' as const;
+
 const communitiesService = {
     // check the name isn't taken first — returning null lets the controller respond with 409 instead of letting Prisma throw on the unique constraint
     async createCommunity(ownerId: string, dto: CreateCommunityDTO) {
+        const profile = await authRepository.findProfileById(ownerId);
+        if (!profile) {
+            return PROFILE_NOT_FOUND;
+        }
+
         const existing = await communitiesRepository.findById({ name: dto.name });
 
         if (existing) {

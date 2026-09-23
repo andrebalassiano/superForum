@@ -4,6 +4,7 @@ import request from 'supertest';
 import app from '../../src/app';
 import { TEST_USERS, authHeader } from '../helpers/auth';
 import { makeProfile, makeCommunity, makePost } from '../helpers/seed';
+import prisma from '../../src/core/prismaSingleton';
 
 beforeEach(async () => {
     await makeProfile(TEST_USERS.alice, 'alice');
@@ -54,6 +55,20 @@ describe('communities: POST /api/communities', () => {
             .send({ name: '  ' });
 
         expect(res.status).toBe(400);
+    });
+
+    it('returns 404 with a profile message when the owner has no profile row', async () => {
+        // Bob is authenticated but has no profile — drop the one the setup seeded. Without the
+        // pre-check the owner connect throws P2025 and surfaces as an opaque 500.
+        await prisma.profile.delete({ where: { id: TEST_USERS.bob.id } });
+
+        const res = await request(app)
+            .post('/api/communities')
+            .set('Authorization', authHeader(TEST_USERS.bob))
+            .send({ name: 'orphaned' });
+
+        expect(res.status).toBe(404);
+        expect(res.body.error.message).toMatch(/profile/i);
     });
 });
 

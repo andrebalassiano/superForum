@@ -8,7 +8,9 @@ export interface AuthContextValue {
     user: User | null;
     loading: boolean;
     signIn: (email: string, password: string) => Promise<void>;
-    signUp: (email: string, password: string) => Promise<void>;
+    // Takes a username because signing up is two steps: create the Supabase identity, then create
+    // the app's own Profile row that posts and comments hang off.
+    signUp: (email: string, password: string, username: string) => Promise<void>;
     signOut: () => Promise<void>;
 }
 

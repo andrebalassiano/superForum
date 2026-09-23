@@ -1,5 +1,6 @@
-import { Routes, Route, Link, NavLink } from 'react-router';
+import { Routes, Route, Link, NavLink, useLocation } from 'react-router';
 import { useAuth } from './auth/AuthContext';
+import { useProfile } from './auth/useProfile';
 import Button from './components/Button';
 import { buttonClasses } from './components/buttonStyles';
 import FeedPage from './pages/FeedPage';
@@ -9,10 +10,18 @@ import CommunitiesPage from './pages/CommunitiesPage';
 import LoginPage from './pages/LoginPage';
 import NewPostPage from './pages/NewPostPage';
 import NewCommunityPage from './pages/NewCommunityPage';
+import WelcomePage from './pages/WelcomePage';
 
 // App is the shell: a sticky header on every page plus a <Routes> block that swaps the page by URL.
 function App() {
     const { user, signOut } = useAuth();
+    const profileQuery = useProfile();
+    const { pathname } = useLocation();
+
+    // Signed in, but the Profile row that posts and comments hang off doesn't exist (a 404 from
+    // /auth/me, which useProfile turns into null). Every write would fail, so say so up front
+    // rather than letting them discover it on a form. Hidden on /welcome, which is the fix itself.
+    const needsProfile = !!user && profileQuery.data === null && pathname !== '/welcome';
 
     return (
         <div>
@@ -77,6 +86,18 @@ function App() {
                 </div>
             </header>
 
+            {needsProfile && (
+                <div className="border-b border-accent-line bg-accent-soft">
+                    <p className="mx-auto max-w-2xl px-4 py-2 text-sm text-heading">
+                        Your account needs a username before you can post, comment, or vote.{' '}
+                        <Link to="/welcome" className="text-accent underline">
+                            Choose one
+                        </Link>
+                        .
+                    </p>
+                </div>
+            )}
+
             {/* One shared content column for every page — pages no longer set their own width. */}
             <main id="main" className="mx-auto max-w-2xl px-4">
                 <Routes>
@@ -87,6 +108,7 @@ function App() {
                     <Route path="/communities/new" element={<NewCommunityPage />} />
                     <Route path="/communities/:id" element={<CommunityPage />} />
                     <Route path="/login" element={<LoginPage />} />
+                    <Route path="/welcome" element={<WelcomePage />} />
                     <Route path="/submit" element={<NewPostPage />} />
                 </Routes>
             </main>

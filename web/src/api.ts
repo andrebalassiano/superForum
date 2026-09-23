@@ -10,6 +10,22 @@ export const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3000/ap
 // needing hundreds of posts; a real feed would use something larger (the backend caps limit at 100).
 export const PAGE_SIZE = 5;
 
+// An Error that also carries the HTTP status, so a caller can treat one failure differently from
+// another — GET /auth/me answering 404 means "signed in but no profile yet", which is a state the
+// UI handles, not an error to show. Everything else still reads `.message` as before.
+// (The status is declared and assigned separately rather than as a constructor parameter property,
+// because the client compiles with `erasableSyntaxOnly` — every TS construct must vanish at build
+// time, and a parameter property would emit an assignment.)
+export class ApiError extends Error {
+    status: number;
+
+    constructor(message: string, status: number) {
+        super(message);
+        this.name = 'ApiError';
+        this.status = status;
+    }
+}
+
 // One choke point for every API call — the frontend mirror of the backend's middleware layer. It
 // attaches the signed-in user's JWT, sets the method/body for writes, checks the response, unwraps
 // the backend's { error: { message } } envelope into a thrown Error, and returns parsed JSON.
@@ -43,7 +59,7 @@ export async function apiFetch<T>(
         } catch {
             // error response had no JSON body — keep the status message
         }
-        throw new Error(message);
+        throw new ApiError(message, res.status);
     }
 
     // 204 No Content (e.g. a successful DELETE vote) has no body to parse.
