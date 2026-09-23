@@ -117,7 +117,7 @@ function LoginPage() {
             {DEMO_EMAIL && DEMO_PASSWORD && (
                 <div className="mt-6 rounded-lg border border-border p-4">
                     <p className="mb-3 text-sm text-muted">
-                        Just looking around? Use the shared demo account — you can post, comment,
+                        Just looking around? Use the shared demo account. You can post, comment,
                         and vote with it.
                     </p>
                     <Button
