@@ -56,7 +56,9 @@ function Comments({ postId }: CommentsProps) {
 
     return (
         <section className="pb-16">
-            <h2 className="mt-6 mb-3 border-t border-border pt-6 text-xl font-semibold">Comments</h2>
+            <h2 className="mt-6 mb-3 border-t border-border pt-6 text-xl font-semibold">
+                Comments
+            </h2>
 
             {user ? (
                 <form
@@ -107,7 +109,9 @@ function Comments({ postId }: CommentsProps) {
                 ) : (
                     comments.map((c) => (
                         <article key={c.id} className="border-t border-border py-3">
-                            <p className="mb-1 text-xs font-medium text-accent">{c.author.username}</p>
+                            <p className="mb-1 text-xs font-medium text-accent">
+                                {c.author.username}
+                            </p>
                             <p className="wrap-break-word whitespace-pre-wrap text-heading">
                                 {c.content}
                             </p>

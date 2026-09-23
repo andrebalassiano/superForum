@@ -15,9 +15,7 @@
     --danger: #dc2626;
     --danger-bg: rgba(220, 38, 38, 0.08);
     --danger-border: rgba(220, 38, 38, 0.35);
-    --shadow:
-        rgba(0, 0, 0, 0.1) 0 10px 15px -3px,
-        rgba(0, 0, 0, 0.05) 0 4px 6px -2px;
+    --shadow: rgba(0, 0, 0, 0.1) 0 10px 15px -3px, rgba(0, 0, 0, 0.05) 0 4px 6px -2px;
 
     --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
     --mono: ui-monospace, Consolas, monospace;
@@ -38,9 +36,7 @@
         --danger: #f87171;
         --danger-bg: rgba(248, 113, 113, 0.12);
         --danger-border: rgba(248, 113, 113, 0.4);
-        --shadow:
-            rgba(0, 0, 0, 0.4) 0 10px 15px -3px,
-            rgba(0, 0, 0, 0.25) 0 4px 6px -2px;
+        --shadow: rgba(0, 0, 0, 0.4) 0 10px 15px -3px, rgba(0, 0, 0, 0.25) 0 4px 6px -2px;
     }
 }
 

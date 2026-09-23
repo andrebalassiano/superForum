@@ -42,7 +42,11 @@ function FeedPage() {
     // name for screen readers, and aria-pressed tells them which sort is active (they're toggle
     // buttons — the underline alone is visual-only).
     const tabs = (
-        <div role="group" aria-label="Sort posts" className="mb-4 flex gap-1 border-b border-border">
+        <div
+            role="group"
+            aria-label="Sort posts"
+            className="mb-4 flex gap-1 border-b border-border"
+        >
             {SORTS.map(({ key, label }) => (
                 <button
                     key={key}

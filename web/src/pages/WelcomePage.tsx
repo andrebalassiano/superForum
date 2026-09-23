@@ -44,7 +44,8 @@ function WelcomePage() {
     if (profileQuery.data) {
         return (
             <p className="my-12 text-center text-muted">
-                You're all set as <strong className="text-heading">{profileQuery.data.username}</strong>.{' '}
+                You're all set as{' '}
+                <strong className="text-heading">{profileQuery.data.username}</strong>.{' '}
                 <Link to="/" className="text-accent no-underline hover:underline">
                     Go to the feed
                 </Link>
@@ -83,7 +84,9 @@ function WelcomePage() {
                 </Field>
 
                 {/* A taken username comes back as a 409 the backend words for us. */}
-                {createProfile.isError && <ErrorMessage>{createProfile.error.message}</ErrorMessage>}
+                {createProfile.isError && (
+                    <ErrorMessage>{createProfile.error.message}</ErrorMessage>
+                )}
 
                 <Button
                     type="submit"

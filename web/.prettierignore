@@ -1,0 +1,8 @@
+# Build output
+dist
+
+# Lockfile
+package-lock.json
+
+# Hand-authored prose docs — keep their deliberate layout and voice
+*.md

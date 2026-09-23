@@ -27,18 +27,16 @@ function isPostListQuery(q: { queryKey: readonly unknown[] }) {
 function patchPostInCaches(queryClient: QueryClient, postId: string, patch: (p: Post) => Post) {
     queryClient.setQueryData<Post>(['post', postId], (old) => (old ? patch(old) : old));
 
-    queryClient.setQueriesData<InfiniteData<Page<Post>>>(
-        { predicate: isPostListQuery },
-        (old) =>
-            old
-                ? {
-                      ...old,
-                      pages: old.pages.map((page) => ({
-                          ...page,
-                          items: page.items.map((p) => (p.id === postId ? patch(p) : p)),
-                      })),
-                  }
-                : old,
+    queryClient.setQueriesData<InfiniteData<Page<Post>>>({ predicate: isPostListQuery }, (old) =>
+        old
+            ? {
+                  ...old,
+                  pages: old.pages.map((page) => ({
+                      ...page,
+                      items: page.items.map((p) => (p.id === postId ? patch(p) : p)),
+                  })),
+              }
+            : old,
     );
 }
 

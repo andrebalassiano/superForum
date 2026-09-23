@@ -117,7 +117,11 @@ function NewPostPage() {
 
                 {createPost.isError && <ErrorMessage>{createPost.error.message}</ErrorMessage>}
 
-                <Button type="submit" disabled={!canSubmit || createPost.isPending} className="self-start">
+                <Button
+                    type="submit"
+                    disabled={!canSubmit || createPost.isPending}
+                    className="self-start"
+                >
                     {createPost.isPending ? 'Posting...' : 'Create post'}
                 </Button>
             </form>

@@ -18,7 +18,10 @@ A deployed build is made with `VITE_API_URL` set to the live API's address; loca
 npm run build     # type-check and bundle to dist/
 npm run lint      # oxlint
 npm test          # Vitest + React Testing Library (npm run test:watch to keep it open)
+npm run format    # Prettier (npm run format:check is what CI runs)
 ```
+
+Linting and formatting stay in separate lanes here as they do at the root: oxlint judges the code, Prettier judges the layout. The Prettier settings are the same ones the API uses — deliberately duplicated into this project's own `.prettierrc.json` rather than reached for up the tree, so `web/` keeps working as a self-contained project.
 
 The tests run in jsdom against a helper that supplies the three things most components assume above them — a router, a query client, and the auth context — and they mock `src/api.ts`, so nothing reaches the network. Where a component's real behaviour is a cache write rather than a rendered value, as with optimistic voting, the assertions are against the query cache.
 
