@@ -1,8 +1,10 @@
 # superForum
 
-Reddit-like REST API backend. Built by Andre Balassiano and Luiz Tatemoto.
+Reddit-like full-stack forum. Built by Andre Balassiano and Luiz Tatemoto.
 
-## Stack
+Two halves in one repo: a **REST API at the repository root** (everything below unless stated otherwise) and a **React client in `web/`**, which is a self-contained project with its own dependencies, TypeScript config, linter, formatter, and test runner. The root tooling deliberately does not reach into it — `eslint.config.mjs` ignores `web/**` and the root `.prettierignore` ignores `web`. See "The web client" below. Deployed: client on Vercel, API on Render, database and auth on Supabase.
+
+## Stack (API)
 
 - **Runtime**: Node.js + TypeScript 5
 - **Framework**: Express 5
@@ -11,7 +13,7 @@ Reddit-like REST API backend. Built by Andre Balassiano and Luiz Tatemoto.
 - **Database**: PostgreSQL (hosted on Supabase)
 - **Validation**: Zod 4
 
-## Running the project
+## Running the project (API)
 
 Andre runs all shell commands in **PowerShell** on Windows — use PowerShell syntax (`$env:VAR`, `;` for sequencing, no `&&` chaining) when suggesting commands.
 
@@ -37,7 +39,16 @@ npm run format        # Prettier --write .
 npm run format:check  # Prettier --check . (what CI runs)
 ```
 
-## Architecture
+Seed demo content into whatever `DATABASE_URL` points at (idempotent — fixed ids, upserted):
+
+```powershell
+npm run seed
+```
+
+The client is a separate project with its own scripts — see "The web client" below. Both halves must
+be running for the app to work locally: the API on 3000, Vite on 5173.
+
+## Architecture (API)
 
 Every module follows a strict 4-layer pattern:
 
@@ -90,7 +101,12 @@ All five modules are implemented and wired into the main router (`src/routers/in
 
 ## Environment variables
 
-Required in `.env` (see `.env.example` for annotated sources):
+The API reads `.env`; the client reads its own `web/.env.local` (see `web/.env.example`). Only
+`VITE_`-prefixed variables reach browser code, and every one of them is compiled into the bundle and
+public by definition — never put a secret behind that prefix.
+
+Required in `.env` (see `.env.example` for annotated sources, including the deploy-only `PORT`,
+`TRUST_PROXY`, `CORS_ORIGIN` and rate-limit knobs):
 
 ```
 DATABASE_URL=            # pooled Postgres connection (runtime queries)
@@ -109,6 +125,51 @@ npx prisma generate
 ```
 
 Note: `prisma migrate dev` is interactive. For a rename or a change that would otherwise drop or reject data on existing rows (e.g. adding a NOT NULL column), hand-write the migration with `ALTER ... RENAME` / `ADD COLUMN` + backfill, then apply with `npx prisma migrate deploy` (non-interactive). This is how the community rename and the `ownerId` backfill preserved existing rows.
+
+## The web client (`web/`)
+
+A React 19 single-page app built by Vite 8 on TypeScript 6. React Router 8 for routing, TanStack Query 5 for server state, `@supabase/supabase-js` for auth, Tailwind 4 for styling, oxlint + Prettier, Vitest + React Testing Library for tests. It is a real consumer of the API — no mock data anywhere.
+
+```powershell
+cd web
+npm run dev          # Vite dev server on http://localhost:5173
+npm run build        # tsc -b && vite build — the type-check IS the build
+npm run lint         # oxlint
+npm run format       # Prettier (format:check is what CI runs)
+npm test             # Vitest (npm run test:watch to keep it open)
+```
+
+### Layout
+
+- `src/api.ts` — the single HTTP choke point. Everything else calls `apiFetch`; nothing calls `fetch` directly.
+- `src/auth/` — `AuthContext.ts` (context + the `useAuth` hook), `AuthProvider.tsx` (session state), `useProfile.ts` (the caller's Profile row).
+- `src/pages/` — one component per route, wired in `App.tsx`.
+- `src/components/` — shared UI. `states.tsx` holds the skeleton/empty/error primitives.
+- `src/hooks/useInfiniteScroll.ts` — the `IntersectionObserver` that drives paging.
+- `src/lib/` — `supabase.ts` (client singleton), `time.ts` (`timeAgo`).
+- `src/test/` — `setup.ts` (jest-dom matchers + cleanup) and `renderWithProviders.tsx`.
+- `src/types.ts` — the API response shapes the UI reads.
+
+### Conventions
+
+- **One fetch wrapper.** `apiFetch<T>(path, { method, body })` attaches the bearer token, sets the content type, unwraps the API's `{ error: { message } }` envelope into a thrown `ApiError`, and returns `undefined` for a 204. `ApiError` carries `.status`, which is how a caller tells one failure from another — `useProfile` turns a 404 from `GET /auth/me` into `null` rather than an error, because "signed in but no profile yet" is a state the UI renders.
+- **A 401 is a state transition, not an error (2026-09-23).** If a request 401s _and a token was sent_, `apiFetch` refreshes the session once and replays the request; if that fails it calls `supabase.auth.signOut()` so the UI stops claiming to be signed in, and throws "Your session has expired". Exactly one retry, and never for an anonymous request. Without this the client sat on a dead session while every write failed — which is what happens when several tabs race to refresh and Supabase revokes the session family for reusing a rotated refresh token.
+- **Query keys.** `['posts', sort]` (feed), `['post', id]`, `['comments', postId]`, `['communities']` (browse list), `['communities', 'all']` (the post form's picker), `['community', id]` (the entity), `['community', id, 'posts']` (its feed), `['profile', 'me']`. Invalidation leans on prefix matching — invalidating `['communities']` also refreshes `['communities', 'all']`. Anything matching on key SHAPE must be careful: `VoteButtons`' `isPostListQuery` predicate matches `['posts', …]` and `['community', id, 'posts']` but must NOT match `['community', id]`, which holds an entity rather than a paged list.
+- **Two write strategies, chosen per mutation.** Voting is **optimistic**: `onMutate` patches every cached copy of the post (the detail query and every matching list query) with the same score delta the server will apply, snapshots the old values, and `onError` restores them. Everything else — creating, editing, deleting a post or comment — **invalidates and refetches**, because the server assigns ids and timestamps and there is nothing useful to guess.
+- **Supabase identity and the app's Profile are two records.** Signing up creates the auth user; `POST /auth/profile` creates the `Profile` that posts, comments and votes point at. `signUp` does both. `/welcome` (`WelcomePage.tsx`) recovers an account that has one and not the other, and `App.tsx` shows a banner whenever `useProfile` returns `null`. A Profile's id IS the Supabase user id, which is why `user.id === post.authorId` is a valid ownership comparison.
+- **Ownership in the UI is cosmetic.** `OwnerActions` renders Edit/Delete only for your own content, but the API re-checks on every `PATCH`/`DELETE` and answers 403 regardless. Never treat a hidden button as a control.
+- **Styling is Tailwind over semantic tokens, not raw colors.** The palette lives as CSS variables in `index.css` that flip under `prefers-color-scheme: dark`, exposed to Tailwind through `@theme inline` as `bg-bg`, `text-heading`, `text-muted`, `border-border`, `text-accent`, `bg-accent-soft`, `border-accent-line`, `bg-surface`, and the `danger` trio. **There are no `dark:` variants** — the tokens handle both themes. Two gotchas: opacity modifiers (`text-muted/50`) do not work on var-based tokens, and the canonical class is `wrap-break-word`, not `break-words`.
+- **Fast Refresh forces some file splits.** oxlint's `react/only-export-components` fires when a module exports both a component and something else, which breaks hot reload. That is why `AuthContext.ts` (context + hook) is separate from `AuthProvider.tsx`, and `buttonStyles.ts` (`buttonClasses`) from `Button.tsx`. Keep new shared helpers out of component files.
+- **Icon components REPLACE their default className.** `<Thumb className="sm:hidden" />` drops the default `h-5 w-5` and renders a zero-size SVG. Always pass sizing when overriding: `className="h-5 w-5 sm:hidden"`.
+- **`erasableSyntaxOnly` is on.** Every TypeScript construct must vanish at build time, so no parameter properties (`constructor(readonly x: T)`), no enums, no namespaces. `ApiError` declares and assigns its `status` field separately for this reason.
+- **Tests.** `vitest.config.ts` is deliberately separate from `vite.config.ts` (jsdom, globals, no Tailwind processing — tests assert on structure and behaviour, never computed styles). `renderWithProviders` supplies the router, a query client and the auth context, with a `signedIn` toggle. Query by role and accessible name, never by class. **Where a component's real behaviour is a cache write rather than a rendered value — optimistic voting — assert against the query cache**, because the rendered score comes from props and a DOM-only test would pass while the feed silently stopped updating. Mock `../api` so no test can reach the network.
+- **Env vars** are typed in `src/vite-env.d.ts`: `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` (required), `VITE_API_URL` (falls back to `http://localhost:3000/api`), and the optional `VITE_DEMO_EMAIL` / `VITE_DEMO_PASSWORD` that gate the "Try the demo" panel on the sign-in page. All of them ship in the bundle.
+- **Prettier config is duplicated, on purpose.** `web/.prettierrc.json` repeats the root's settings rather than importing them, so `web/` stays a project that works on its own. Prettier is pinned exactly (3.9.6) in both halves so a patch bump cannot make `format:check` disagree across them.
+- **Deploy.** Vercel builds with Root Directory `web`; `web/vercel.json` rewrites every path to `index.html` so React Router owns the URL and a direct visit to `/posts/:id` does not 404.
+
+### CI
+
+`.github/workflows/ci.yml` runs two jobs in parallel: `test` (the API, with a Postgres service container) and `web` (`npm ci`, `lint`, `format:check`, `test`, `build`, all inside `web/` via `defaults.run.working-directory`, with `cache-dependency-path: web/package-lock.json` so the two jobs cache separately). The client job needs no database and no secrets — its tests mock `api.ts`.
 
 ## Checkpoint — 2026-07-21
 
