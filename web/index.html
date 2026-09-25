@@ -4,7 +4,30 @@
         <meta charset="UTF-8" />
         <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>web</title>
+
+        <title>superForum</title>
+        <meta
+            name="description"
+            content="A Reddit-style forum: communities, posts, comments and voting. Built with TypeScript, Express, Prisma and React."
+        />
+
+        <!-- Link previews (LinkedIn, Slack, Discord, iMessage). Without these a shared link
+             renders as a blank card titled after the page, which is how a finished site ends up
+             looking abandoned. og:image has to be an absolute URL. -->
+        <meta property="og:type" content="website" />
+        <meta property="og:site_name" content="superForum" />
+        <meta property="og:url" content="https://superforum.vercel.app/" />
+        <meta property="og:title" content="superForum" />
+        <meta
+            property="og:description"
+            content="A Reddit-style forum: communities, posts, comments and voting. Built with TypeScript, Express, Prisma and React."
+        />
+        <meta property="og:image" content="https://superforum.vercel.app/og.png" />
+        <meta
+            property="og:image:alt"
+            content="The superForum feed, showing posts with vote counts"
+        />
+        <meta name="twitter:card" content="summary_large_image" />
     </head>
     <body>
         <div id="root"></div>

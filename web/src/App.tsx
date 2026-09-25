@@ -12,10 +12,11 @@ import LoginPage from './pages/LoginPage';
 import NewPostPage from './pages/NewPostPage';
 import NewCommunityPage from './pages/NewCommunityPage';
 import WelcomePage from './pages/WelcomePage';
+import NotFoundPage from './pages/NotFoundPage';
 
 // App is the shell: a sticky header on every page plus a <Routes> block that swaps the page by URL.
 function App() {
-    const { user, signOut } = useAuth();
+    const { user, loading, signOut } = useAuth();
     const profileQuery = useProfile();
     const { pathname } = useLocation();
 
@@ -64,7 +65,11 @@ function App() {
                         >
                             Communities
                         </NavLink>
-                        {user ? (
+                        {/* Until Supabase has restored the session from storage we know
+                            nothing, so render neither state. Showing "Sign in" first and
+                            swapping it for the account controls a moment later is a visible
+                            flicker on every cold load. */}
+                        {loading ? null : user ? (
                             <>
                                 {/* Primary action — visually distinct from the account controls. A
                                     Link styled as a button via the shared buttonClasses.
@@ -125,6 +130,8 @@ function App() {
                     <Route path="/communities/:id" element={<CommunityPage />} />
                     <Route path="/login" element={<LoginPage />} />
                     <Route path="/welcome" element={<WelcomePage />} />
+                    {/* Anything no route above matched. */}
+                    <Route path="*" element={<NotFoundPage />} />
                     <Route path="/submit" element={<NewPostPage />} />
                 </Routes>
             </main>

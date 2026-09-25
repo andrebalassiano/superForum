@@ -4,6 +4,7 @@ import { BrowserRouter } from 'react-router';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { AuthProvider } from './auth/AuthProvider';
+import ErrorBoundary from './components/ErrorBoundary';
 import './index.css';
 import App from './App.tsx';
 
@@ -13,16 +14,19 @@ const queryClient = new QueryClient();
 
 createRoot(document.getElementById('root')!).render(
     <StrictMode>
-        {/* QueryClientProvider makes the cache available to every useQuery beneath it. */}
-        <QueryClientProvider client={queryClient}>
-            {/* AuthProvider makes the session + auth actions available to every component. */}
-            <AuthProvider>
-                <BrowserRouter>
-                    <App />
-                </BrowserRouter>
-            </AuthProvider>
-            {/* A floating, dev-only panel for inspecting the cache — excluded from prod builds. */}
-            <ReactQueryDevtools initialIsOpen={false} />
-        </QueryClientProvider>
+        {/* Outermost, so it also catches a failure inside the providers themselves. */}
+        <ErrorBoundary>
+            {/* QueryClientProvider makes the cache available to every useQuery beneath it. */}
+            <QueryClientProvider client={queryClient}>
+                {/* AuthProvider makes the session + auth actions available to every component. */}
+                <AuthProvider>
+                    <BrowserRouter>
+                        <App />
+                    </BrowserRouter>
+                </AuthProvider>
+                {/* A floating, dev-only panel for inspecting the cache — excluded from prod builds. */}
+                <ReactQueryDevtools initialIsOpen={false} />
+            </QueryClientProvider>
+        </ErrorBoundary>
     </StrictMode>,
 );
