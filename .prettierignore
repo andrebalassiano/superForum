@@ -16,3 +16,6 @@ postman
 
 # The frontend is a self-contained project with its own formatting toolchain
 web
+
+# Local editor settings, not part of the project
+.vscode
