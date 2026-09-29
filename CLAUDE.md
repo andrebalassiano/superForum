@@ -15,7 +15,7 @@ Two halves in one repo: a **REST API at the repository root** (everything below 
 
 ## Running the project (API)
 
-Andre runs all shell commands in **PowerShell** on Windows — use PowerShell syntax (`$env:VAR`, `;` for sequencing, no `&&` chaining) when suggesting commands.
+Shell examples in this document use **PowerShell** (`$env:VAR`, `;` for sequencing, no `&&` chaining). Translate as needed for bash.
 
 Run the server:
 
@@ -47,6 +47,41 @@ npm run seed
 
 The client is a separate project with its own scripts — see "The web client" below. Both halves must
 be running for the app to work locally: the API on 3000, Vite on 5173.
+
+## Tests (API)
+
+89 Vitest + supertest integration tests across all five modules, driving the real Express app end to
+end. Supabase auth is mocked at the client boundary (`test/setup/each-setup.ts`, two users
+Alice/Bob), so no real tokens are needed; the suite runs against a throwaway Postgres, migrated fresh
+and truncated between tests.
+
+```powershell
+npm test                # the integration suite
+npm run test:coverage   # the same, with coverage
+npm run test:realtoken  # the opt-in real-token lane (see below)
+```
+
+Local runs need `.env.test` (copy `.env.test.example`) and the test database up —
+`docker compose -f docker-compose.test.yml up -d` puts Postgres on **:5433**. CI uses a GitHub
+Actions service container instead. The default config only includes `test/integration/**`.
+
+**Real-token lane**: a second, opt-in Vitest config (`vitest.realtoken.config.ts`, specs in
+`test/realtoken/`) that runs WITHOUT the Supabase mock — it signs a real test user in, gets a genuine
+JWT, and drives it through `requireAuth` end to end. Gated on credentials in `.env.test.realtoken`
+(copy `.env.test.realtoken.example`); with none present it skips cleanly and exits 0, so the default
+run and CI stay secret-free.
+
+**Gotcha**: the generated Prisma client does not resolve under Vite's module graph without the
+`prismaTsResolver` plugin in `vitest.config.ts`. Drop it and every test fails with an import error
+that looks unrelated to Prisma.
+
+Coverage sits around 69%. The gap is the `catch → 500` blocks, the `if (!req.user)` guards after
+`requireAuth`, and non-P2025 re-throws — paths unreachable without faking impossible states, so they
+are deliberately left uncovered rather than chased. Functions coverage is 100%.
+
+A Postman collection (`postman/superForum.postman_collection.json`) covers the same flows by hand:
+the full happy path plus a negative-path battery (validation 400s, auth 401s, 404s, 409s,
+ownership 403s).
 
 ## Architecture (API)
 
@@ -167,54 +202,36 @@ npm test             # Vitest (npm run test:watch to keep it open)
 - **Prettier config is duplicated, on purpose.** `web/.prettierrc.json` repeats the root's settings rather than importing them, so `web/` stays a project that works on its own. Prettier is pinned exactly (3.9.6) in both halves so a patch bump cannot make `format:check` disagree across them.
 - **Deploy.** Vercel builds with Root Directory `web`; `web/vercel.json` rewrites every path to `index.html` so React Router owns the URL and a direct visit to `/posts/:id` does not 404.
 
-### CI
+## CI
 
-`.github/workflows/ci.yml` runs two jobs in parallel: `test` (the API, with a Postgres service container) and `web` (`npm ci`, `lint`, `format:check`, `test`, `build`, all inside `web/` via `defaults.run.working-directory`, with `cache-dependency-path: web/package-lock.json` so the two jobs cache separately). The client job needs no database and no secrets — its tests mock `api.ts`.
+`.github/workflows/ci.yml` runs two jobs in parallel, on every push to `main` and every pull request.
 
-## Checkpoint — 2026-07-21
+- **`test`** (the API): checkout → `npm ci` → `npx prisma generate` → `npx prisma migrate deploy`
+  against a Postgres service container → `typecheck` → `lint` → `format:check` → `test:coverage` → a
+  single Codecov upload (`codecov/codecov-action@v5`, `CODECOV_TOKEN` repo secret). `prisma generate`
+  has to run before the lint step as well as the tests: the generated client is git-ignored, and the
+  type-aware ESLint parser needs it to resolve `src` imports.
+- **`web`** (the client): `npm ci`, `lint`, `format:check`, `test`, `build` — all inside `web/` via
+  `defaults.run.working-directory`, with `cache-dependency-path: web/package-lock.json` so the two
+  jobs cache separately. This job needs no database and no secrets, because its tests mock `api.ts`.
 
-Built incrementally as a learning exercise — Andre reviews each step and wants to understand and defend every line. The core build-out is complete, the happy-path and negative-path flows are verified end-to-end via Postman, and a validation/authorization hardening pass is done.
+## Project status
 
-### State of the project
+Feature-complete and deployed. All five modules are implemented, wired and tested, and the React
+client consumes every one of them. Both CI jobs are green. There are no known outstanding defects.
 
-- **All five modules implemented and wired**: auth, posts, communities, comments, votes.
-- **Auth hardened**: post/comment/vote/community writes require `requireAuth`; `authorId` / `userId` / community `ownerId` come from the JWT, never the request body (impersonation-safe).
-- **Reads personalized**: `optionalAuth` on GETs folds `currentUserVote` into post/comment reads without forcing a login.
-- **Hardening pass (2026-07-21)**: Zod `.strict()` on all write bodies (unknown key → 400); the posts module's missing `validateBody`/`validateParams` wired in; create-with-nonexistent-FK maps to `404` (P2025), not 500; a voter with no Profile gets a clear `404`; `title` requires `.min(1)`; posts delete returns `204`. **Ownership enforced**: only the author may PATCH/DELETE a post or comment, and only the owner may modify a community — `403` otherwise.
-- **Subreddit → Community rename (2026-07-20)**: full rename across DB, code, and docs via the data-preserving migration `20260720163000_rename_subreddit_to_community`. `/api/communities` is live; posts expose `communityId` + a nested `community` object; the old `/api/subreddits` route is gone.
-- **Community ownership (2026-07-21)**: `ownerId` added to `Community` via a data-preserving migration (existing rows backfilled to the sole real user).
-- **Repo moved** to Andre's personal GitHub (`github.com/andrebalassiano/superForum`); Luiz Tatemoto remains a collaborator.
-- **README + `package.json`** completed (portfolio-facing).
-- **Postman E2E verified**: full happy-path (auth → community → post → reads → vote lifecycle → comment) plus a complete negative-path battery (validation 400s, auth 401s, 404s, 409, ownership 403s).
+The load-bearing guarantees, in case a change threatens one of them:
 
-### Known rough edges (deliberately deferred)
-
-1. The nested `POST /posts/:postId/comments` route isn't exposed — creating a comment still uses `POST /comments` with `postId` in the body (only the nested GET list route exists).
-2. Create-post when the *author's* Profile row is missing returns a misleading `404 "Community not found"` (the author connect also throws P2025; only the vote handlers pre-check the profile).
-
-### Next steps
-
-Superseded by the 2026-07-25 checkpoint below.
-
-## Checkpoint — 2026-07-25
-
-Automated testing + CI landed and merged to `main` (PR #1, merge commit `c56cd41`, two feature commits `e8b612e`/`e91548b`). superForum's last portfolio gap — no tests — is closed. Working tree clean.
-
-### What shipped since 2026-07-21
-
-- **Integration test suite**: 68 Vitest + supertest tests across all five modules, driving the real Express app end-to-end. Supabase auth is mocked at the client boundary (`test/setup/each-setup.ts`, two users Alice/Bob) so no real tokens are needed; runs against a throwaway Postgres (Docker `docker-compose.test.yml` on :5433 locally, a GitHub Actions service container in CI), migrated fresh and truncated between tests. Run with `npm test` / `npm run test:coverage`. The default config only includes `test/integration/**`. Local test DB needs `.env.test` (copy from `.env.test.example`) and the container up. Harness + the Prisma-client-under-Vite gotcha (solved by a `prismaTsResolver` plugin in `vitest.config.ts`) are detailed in the `project-test-suite-plan` memory.
-- **Real-token lane (2026-08-01)**: an opt-in second Vitest config (`vitest.realtoken.config.ts`, `npm run test:realtoken`, specs in `test/realtoken/`) that runs WITHOUT the Supabase mock — it signs a real test user into Supabase, gets a genuine JWT, and drives it through `requireAuth` end-to-end. Gated on creds in `.env.test.realtoken` (copy from `.env.test.realtoken.example`); with no creds it skips cleanly (exit 0), so the default run and CI stay secret-free. This is backlog item 4 done.
-- **GitHub Actions CI** (`.github/workflows/ci.yml`): Node 24, Postgres service container, steps checkout → `npm ci` → `prisma generate` (client is git-ignored) → `prisma migrate deploy` → `npm run typecheck` → `npm run test:coverage` → single Codecov upload (`codecov/codecov-action@v5`, `CODECOV_TOKEN` repo secret). Triggers on push to `main` + all PRs. First run green in 54s.
-- **Codecov** wired; coverage badge live (~69% — the gap is unreachable 500-catch/`if(!req.user)` guards, not missed behavior). README shows CI + coverage badges.
-- **README refreshed (2026-07-25)**: added the ownership/403 decision, a Tests section, and replaced the stale "Still to come" (it had listed ownership/FK-404/tests as undone — the opposite of reality). Prose-first, no-AI-tells voice preserved.
-- **Tooling**: `gh` CLI installed + authed on Andre's machine.
-
-### Known rough edges
-
-None outstanding. Recently resolved:
-- **Author-profile 404 (2026-08-01):** `createPost`/`createComment` now pre-check the caller's Profile (`authRepository.findProfileById`) and return a `PROFILE_NOT_FOUND` sentinel → controller answers `404 "Profile not found — create your profile first"`, instead of the old misleading "Community/Post not found". Mirrors the votes module. +2 Vitest tests (68 total).
-- **Nested comment route (2026-07-25):** `POST /posts/:postId/comments` exposed, flat `POST /comments` removed — `postId` comes from the URL.
-
-### Next steps — full prioritized list in the `project-refinement-backlog` memory
-
-The two portfolio-facing items (Postman collection, author-profile 404) are done. Remaining, in ROI order: **real-token hybrid auth test + coverage bump** → then API-maturity (pagination first). newman-in-CI is optional and overlaps with the real-token work.
+- **Identity is never client-supplied.** `authorId`, `userId` and community `ownerId` all come from
+  the verified JWT, never from the request body. The DTOs deliberately do not carry them, so a
+  regression will not type-check.
+- **Ownership is enforced in the service layer** on every mutation — 403 for a non-owner, kept
+  distinct from 404 for a row that does not exist. The UI hides buttons it should not offer, but the
+  API re-checks regardless and never trusts that.
+- **Validation runs at the edge on every write.** Zod `.strict()` means an unknown key is a 400,
+  not a silently-stripped field and a no-op update.
+- **The Supabase Data API is shut.** Migration `20260924000000_restrict_data_api_roles` enables RLS
+  and revokes the PostgREST roles on all six tables, and the Data API is switched off at the project
+  level. See the "Data API lockdown" convention above before touching it.
+- **Reads are cursor-paginated** with a `new`/`top` feed sort, and personalize through `optionalAuth`
+  without forcing anyone to sign in.
