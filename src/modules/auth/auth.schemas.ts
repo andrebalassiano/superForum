@@ -6,9 +6,4 @@ export const createProfileSchema = z
     })
     .strict();
 
-export const idParamsSchema = z.object({
-    id: z.uuid(),
-});
-
 export type CreateProfileDTO = z.infer<typeof createProfileSchema>;
-export type IdParamsDTO = z.infer<typeof idParamsSchema>;

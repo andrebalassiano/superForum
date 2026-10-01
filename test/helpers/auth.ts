@@ -9,9 +9,9 @@ export interface TestUser {
     token: string;
 }
 
-// The ids are valid v4 UUIDs (version nibble 4, variant nibble 8) so they pass Zod's
-// z.uuid() version/variant check on routes that validate a user id in the URL
-// (e.g. GET /auth/profiles/:id).
+// The ids are valid v4 UUIDs (version nibble 4, variant nibble 8). Nothing validates a user id
+// in a URL any more, but Supabase issues real v4 UUIDs, so fixtures that look the same keep these
+// tests honest about the ids the app actually sees.
 export const TEST_USERS = {
     alice: {
         id: '11111111-1111-4111-8111-111111111111',

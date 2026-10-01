@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
-import authService from './auth.service';
-import { CreateProfileDTO, IdParamsDTO } from './auth.schemas';
+import authService, { USERNAME_TAKEN } from './auth.service';
+import { CreateProfileDTO } from './auth.schemas';
 
 const authController = {
     async createProfile(req: Request<object, object, CreateProfileDTO>, res: Response) {
@@ -13,7 +13,7 @@ const authController = {
 
             const profile = await authService.createProfile(req.user.id, dto.username);
 
-            if (!profile) {
+            if (profile === USERNAME_TAKEN) {
                 return res.status(409).json({ message: 'Username already in use' });
             }
 
@@ -22,24 +22,6 @@ const authController = {
             console.error(error);
 
             return res.status(500).json({ message: 'Failed to create profile' });
-        }
-    },
-
-    async getProfileById(req: Request<IdParamsDTO>, res: Response) {
-        const { id } = req.params;
-
-        try {
-            const profile = await authService.getProfileById(id);
-
-            if (!profile) {
-                return res.status(404).json({ message: 'Profile not found' });
-            }
-
-            return res.status(200).json(profile);
-        } catch (error) {
-            console.error(error);
-
-            return res.status(500).json({ message: 'Failed to fetch profile' });
         }
     },
 

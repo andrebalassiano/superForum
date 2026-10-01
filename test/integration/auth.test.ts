@@ -1,5 +1,4 @@
 import { describe, it, expect } from 'vitest';
-import { randomUUID } from 'node:crypto';
 import request from 'supertest';
 import app from '../../src/app';
 import { TEST_USERS, authHeader } from '../helpers/auth';
@@ -32,6 +31,30 @@ describe('auth: POST /api/auth/profile', () => {
             .send({ username: 'taken' });
 
         expect(res.status).toBe(409);
+    });
+
+    // Uniqueness is enforced on lower(username) (migration 20260930000000), so a name that differs
+    // only in case is the same name. Without this, "alice" and "Alice" would be two accounts whose
+    // profile URLs look identical to a reader.
+    it('returns 409 when the username is taken in a different case', async () => {
+        await makeProfile(TEST_USERS.bob, 'Taken');
+
+        const res = await request(app)
+            .post('/api/auth/profile')
+            .set('Authorization', authHeader(TEST_USERS.alice))
+            .send({ username: 'taken' });
+
+        expect(res.status).toBe(409);
+    });
+
+    it('stores the username with the casing the caller sent', async () => {
+        const res = await request(app)
+            .post('/api/auth/profile')
+            .set('Authorization', authHeader(TEST_USERS.alice))
+            .send({ username: 'MayaBuilds' });
+
+        expect(res.status).toBe(201);
+        expect(res.body.username).toBe('MayaBuilds');
     });
 
     it('rejects an unknown key with 400 (.strict)', async () => {
@@ -77,28 +100,5 @@ describe('auth: GET /api/auth/me', () => {
             .set('Authorization', authHeader(TEST_USERS.alice));
 
         expect(res.status).toBe(404);
-    });
-});
-
-describe('auth: GET /api/auth/profiles/:id', () => {
-    it('returns a public profile by id, no auth required', async () => {
-        await makeProfile(TEST_USERS.alice, 'alice');
-
-        const res = await request(app).get(`/api/auth/profiles/${TEST_USERS.alice.id}`);
-
-        expect(res.status).toBe(200);
-        expect(res.body.username).toBe('alice');
-    });
-
-    it('returns 404 for a non-existent profile', async () => {
-        const res = await request(app).get(`/api/auth/profiles/${randomUUID()}`);
-
-        expect(res.status).toBe(404);
-    });
-
-    it('returns 400 for a non-UUID id', async () => {
-        const res = await request(app).get('/api/auth/profiles/not-a-uuid');
-
-        expect(res.status).toBe(400);
     });
 });
