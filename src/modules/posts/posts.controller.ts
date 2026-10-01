@@ -28,7 +28,9 @@ const postsController = {
 
         try {
             const pagination = req.pagination ?? { limit: 20 };
-            const posts = await postsService.getAllPosts(req.user?.id, pagination, id);
+            const posts = await postsService.getAllPosts(req.user?.id, pagination, {
+                communityId: id,
+            });
 
             return res.status(200).json(posts);
         } catch (error) {

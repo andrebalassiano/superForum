@@ -21,9 +21,9 @@ const postsService = {
     async getAllPosts(
         userId: string | undefined,
         pagination: PaginationQueryDTO & { sort?: 'new' | 'top' },
-        communityId?: string,
+        filters: { communityId?: string; authorId?: string } = {},
     ) {
-        const rows = await postsRepository.findAll(userId, pagination, communityId);
+        const rows = await postsRepository.findAll(userId, pagination, filters);
         const { items, nextCursor } = buildPage(rows, pagination.limit);
 
         const posts = items.map((post) => {
