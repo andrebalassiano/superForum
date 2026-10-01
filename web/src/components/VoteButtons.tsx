@@ -13,12 +13,18 @@ interface VoteButtonsProps {
     post: Post;
 }
 
-// Matches only the post LIST caches: the home feed (['posts', sort]) and community feeds
-// (['community', id, 'posts']). It must NOT match ['community', id] — that caches a Community object,
-// not a paged post list, and the updater below assumes the paged shape.
+// Matches only the post LIST caches: the home feed (['posts', sort]), community feeds
+// (['community', id, 'posts']) and profile feeds (['profiles', username, 'posts']). It must NOT match
+// ['community', id] or ['profiles', username] — those cache a single object, not a paged list, and
+// the updater below assumes the paged shape. Both are excluded by requiring 'posts' at index 2.
+//
+// Every new paged post list has to be added here or voting from it will appear to work and then snap
+// back on the next refetch, because nothing patched its cache.
 function isPostListQuery(q: { queryKey: readonly unknown[] }) {
     return (
-        q.queryKey[0] === 'posts' || (q.queryKey[0] === 'community' && q.queryKey[2] === 'posts')
+        q.queryKey[0] === 'posts' ||
+        (q.queryKey[0] === 'community' && q.queryKey[2] === 'posts') ||
+        (q.queryKey[0] === 'profiles' && q.queryKey[2] === 'posts')
     );
 }
 

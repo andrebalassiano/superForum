@@ -33,6 +33,15 @@ function seedCaches(post: Post) {
         pages: [{ items: [post], nextCursor: null }],
         pageParams: [''],
     });
+    // A profile's posts tab is a fourth paged list of the same posts. isPostListQuery has to match
+    // it, or voting from a profile appears to work and then snaps back on the next refetch.
+    queryClient.setQueryData<InfiniteData<Page<Post>>>(['profiles', 'alice', 'posts'], {
+        pages: [{ items: [post], nextCursor: null }],
+        pageParams: [''],
+    });
+    // The profile ENTITY, which must be left alone: same key prefix, but it holds an object rather
+    // than a paged list, so a predicate that matched it would corrupt this cache.
+    queryClient.setQueryData(['profiles', 'alice'], { username: 'alice', score: 'untouched' });
     return queryClient;
 }
 
@@ -42,6 +51,11 @@ function cachedPost(queryClient: ReturnType<typeof makeTestQueryClient>) {
 
 function cachedListPost(queryClient: ReturnType<typeof makeTestQueryClient>) {
     return queryClient.getQueryData<InfiniteData<Page<Post>>>(['posts', 'new'])?.pages[0].items[0];
+}
+
+function cachedProfileFeedPost(queryClient: ReturnType<typeof makeTestQueryClient>) {
+    return queryClient.getQueryData<InfiniteData<Page<Post>>>(['profiles', 'alice', 'posts'])
+        ?.pages[0].items[0];
 }
 
 beforeEach(() => {
@@ -62,6 +76,23 @@ describe('VoteButtons', () => {
         expect(cachedPost(queryClient)?.currentUserVote).toBe(1);
         expect(cachedListPost(queryClient)?.score).toBe(6);
         expect(cachedListPost(queryClient)?.currentUserVote).toBe(1);
+        expect(cachedProfileFeedPost(queryClient)?.score).toBe(6);
+        expect(cachedProfileFeedPost(queryClient)?.currentUserVote).toBe(1);
+    });
+
+    // The guard half of the predicate. ['profiles', username] caches a profile object, not a page of
+    // posts, so the updater must skip it — the same trap ['community', id] was.
+    it('leaves the profile entity cache untouched', async () => {
+        const queryClient = seedCaches(POST);
+
+        renderWithProviders(<VoteButtons post={POST} />, { queryClient });
+        await userEvent.click(screen.getByRole('button', { name: 'Upvote' }));
+
+        await waitFor(() => expect(cachedPost(queryClient)?.score).toBe(6));
+        expect(queryClient.getQueryData(['profiles', 'alice'])).toEqual({
+            username: 'alice',
+            score: 'untouched',
+        });
     });
 
     // Switching sides is a two-point swing (+1 → -1 is a delta of -2), the easiest arithmetic here

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router';
 import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiFetch, PAGE_SIZE } from '../api';
 import { useAuth } from '../auth/AuthContext';
@@ -52,8 +53,13 @@ function CommentItem({ comment, postId }: { comment: Comment; postId: string }) 
     return (
         <article className="border-t border-border py-3">
             <p className="mb-1 text-xs text-muted">
-                <span className="font-medium text-accent">{comment.author.username}</span> ·{' '}
-                {timeAgo(comment.createdAt)}
+                <Link
+                    to={`/u/${encodeURIComponent(comment.author.username)}`}
+                    className="font-medium text-accent no-underline hover:underline"
+                >
+                    {comment.author.username}
+                </Link>{' '}
+                · {timeAgo(comment.createdAt)}
             </p>
 
             {editing ? (

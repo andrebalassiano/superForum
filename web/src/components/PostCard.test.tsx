@@ -25,12 +25,20 @@ function makePost(overrides: Partial<Post> = {}): Post {
 }
 
 describe('PostCard', () => {
+    // The link that makes profiles reachable at all. Without it the feature exists but nothing
+    // navigates to it.
+    it('links the author to their profile', () => {
+        renderWithProviders(<PostCard post={makePost()} />);
+
+        expect(screen.getByRole('link', { name: 'alice' })).toHaveAttribute('href', '/u/alice');
+    });
+
     it('shows the title, community, author, score, and comment count', () => {
         renderWithProviders(<PostCard post={makePost()} />);
 
         expect(screen.getByRole('heading', { name: 'A post about testing' })).toBeInTheDocument();
         expect(screen.getByRole('link', { name: 'general' })).toBeInTheDocument();
-        expect(screen.getByText(/by alice/)).toBeInTheDocument();
+        expect(screen.getByRole('link', { name: 'alice' })).toBeInTheDocument();
         expect(screen.getByText('7')).toBeInTheDocument();
         expect(screen.getByText('3')).toBeInTheDocument();
     });

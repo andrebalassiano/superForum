@@ -13,6 +13,7 @@ import NewPostPage from './pages/NewPostPage';
 import NewCommunityPage from './pages/NewCommunityPage';
 import WelcomePage from './pages/WelcomePage';
 import NotFoundPage from './pages/NotFoundPage';
+import ProfilePage from './pages/ProfilePage';
 
 // App is the shell: a sticky header on every page plus a <Routes> block that swaps the page by URL.
 function App() {
@@ -85,9 +86,24 @@ function App() {
                                     <PlusIcon className="h-5 w-5 sm:hidden" />
                                     <span className="hidden sm:inline">New post</span>
                                 </Link>
-                                <span className="hidden text-sm text-muted sm:inline">
-                                    {user.email}
-                                </span>
+                                {/* Your own username, linked to your profile. It replaced the
+                                    email that used to sit here: the username is the identity other
+                                    people see, and an email in a header is one more thing to redact
+                                    from a screenshot. Falls back to the email while /auth/me is in
+                                    flight, and to nothing once we know there is no profile yet (the
+                                    banner below covers that case). */}
+                                {profileQuery.data ? (
+                                    <Link
+                                        to={`/u/${encodeURIComponent(profileQuery.data.username)}`}
+                                        className="hidden text-sm text-muted no-underline hover:text-heading sm:inline"
+                                    >
+                                        {profileQuery.data.username}
+                                    </Link>
+                                ) : (
+                                    <span className="hidden text-sm text-muted sm:inline">
+                                        {profileQuery.data === undefined ? user.email : null}
+                                    </span>
+                                )}
                                 <Button
                                     variant="ghost"
                                     onClick={() => void signOut()}
@@ -128,6 +144,7 @@ function App() {
                     {/* Static segment outranks the dynamic :id below, whatever the order. */}
                     <Route path="/communities/new" element={<NewCommunityPage />} />
                     <Route path="/communities/:id" element={<CommunityPage />} />
+                    <Route path="/u/:username" element={<ProfilePage />} />
                     <Route path="/login" element={<LoginPage />} />
                     <Route path="/welcome" element={<WelcomePage />} />
                     {/* Anything no route above matched. */}

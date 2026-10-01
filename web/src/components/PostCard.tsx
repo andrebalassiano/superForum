@@ -20,7 +20,14 @@ function PostCard({ post }: PostCardProps) {
                 >
                     {post.community.name}
                 </Link>{' '}
-                · by {post.author.username} · {timeAgo(post.createdAt)}
+                · by{' '}
+                <Link
+                    to={`/u/${encodeURIComponent(post.author.username)}`}
+                    className="font-medium text-heading no-underline hover:underline"
+                >
+                    {post.author.username}
+                </Link>{' '}
+                · {timeAgo(post.createdAt)}
             </p>
 
             {/* wrap-break-word lets an unbroken long word (a URL, say) wrap instead of forcing the
