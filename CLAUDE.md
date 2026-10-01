@@ -50,7 +50,7 @@ be running for the app to work locally: the API on 3000, Vite on 5173.
 
 ## Tests (API)
 
-89 Vitest + supertest integration tests across all five modules, driving the real Express app end to
+88 Vitest + supertest integration tests across all five modules, driving the real Express app end to
 end. Supabase auth is mocked at the client boundary (`test/setup/each-setup.ts`, two users
 Alice/Bob), so no real tokens are needed; the suite runs against a throwaway Postgres, migrated fresh
 and truncated between tests.
@@ -79,9 +79,13 @@ Coverage sits around 69%. The gap is the `catch → 500` blocks, the `if (!req.u
 `requireAuth`, and non-P2025 re-throws — paths unreachable without faking impossible states, so they
 are deliberately left uncovered rather than chased. Functions coverage is 100%.
 
-A Postman collection (`postman/superForum.postman_collection.json`) covers the same flows by hand:
-the full happy path plus a negative-path battery (validation 400s, auth 401s, 404s, 409s,
-ownership 403s).
+A Postman collection (`postman/superForum.postman_collection.json`) covers the happy path by hand:
+25 requests ordered as a resource lifecycle (sign in → community → post → comment → vote → teardown),
+carrying 25 `pm.test` assertions and capturing the auth token and record ids as it goes, so it runs
+top to bottom in one pass and headless under `newman`. It is deliberately happy-path only — the
+negative paths (validation 400s, 401s, 404s, 409s, ownership 403s) live in the Vitest suite, which
+checks them on every push. The collection's job is letting a human drive the API, including the
+Supabase signup/token dance, which is the part the README alone cannot make easy.
 
 ## Architecture (API)
 
@@ -100,9 +104,9 @@ router → controller → service → repository
 
 All five modules are implemented and wired into the main router (`src/routers/index.ts`):
 
-- `auth` — profiles + current-user resolution (`POST /auth/profile`, `GET /auth/me`, `GET /auth/profiles/:id`)
+- `auth` — profiles + current-user resolution (`POST /auth/profile`, `GET /auth/me`). A public `GET /auth/profiles/:id` existed from the pre-client build and was deleted 2026-09-30: nothing ever consumed it, and public profile reads are keyed by username, not id.
 - `posts` — full CRUD; write routes require `requireAuth` and run `validateBody`/`validateParams`; `authorId` comes from `req.user.id` (not the body); reads use `optionalAuth` and include `currentUserVote`; `GET /posts` is cursor-paginated with a `?sort=new|top` feed sort (`?limit=&cursor=` → `{ items, nextCursor }`); PATCH/DELETE enforce author ownership
-- `communities` — full CRUD (renamed from `subreddits` on 2026-07-20); has an `ownerId`; `GET /communities` is a public cursor-paginated list; `GET /communities/:id/posts` lists a community's posts (nested router owned by the posts module — `communityPostsRouter`, `mergeParams`, mounted at `/communities/:id/posts`; reuses `postsController.getPostsByCommunity` → `getAllPosts(userId, pagination, communityId)`, same envelope/sort/currentUserVote as `GET /posts`; empty page for a missing/empty community, not a 404); PATCH/DELETE enforce owner ownership
+- `communities` — full CRUD (renamed from `subreddits` on 2026-07-20); has an `ownerId`; `GET /communities` is a public cursor-paginated list; `GET /communities/:id/posts` lists a community's posts (nested router owned by the posts module — `communityPostsRouter`, `mergeParams`, mounted at `/communities/:id/posts`; reuses `postsController.getPostsByCommunity` → `getAllPosts(userId, pagination, { communityId })`, same envelope/sort/currentUserVote as `GET /posts`; empty page for a missing/empty community, not a 404); PATCH/DELETE enforce owner ownership
 - `comments` — full CRUD; create and list are nested under the post (`POST`/`GET /posts/:postId/comments`, `postId` from the URL), read/update/delete a single comment at `/comments/:id`; PATCH/DELETE enforce author ownership
 - `votes` — post & comment votes via `PUT`/`DELETE` on `/posts/:postId/vote` and `/comments/:commentId/vote` (upsert toggle); `userId` from the token
 
@@ -118,6 +122,8 @@ All five modules are implemented and wired into the main router (`src/routers/in
 - **P2025 handling**: update/delete catch `P2025` (record not found) → `null` → 404. On create, a `P2025` from a nested `connect` to a missing related row is also caught → `null` → 404 (e.g. bad `communityId`/`postId`). The vote `set*` handlers pre-check the caller's Profile so a missing profile returns a clear 404 instead of masquerading as "target not found".
 - **Status codes**: 201 on create, 200 on read/update, 204 on delete, 400 on bad input, 401 on missing/invalid auth, 403 on non-owner mutation, 404 on not found, 409 on conflict, 500 on unexpected. All modules, including `posts`, return `204` on delete.
 - **Pagination (2026-08-04)**: the three list endpoints (`GET /posts`, `GET /posts/:postId/comments`, `GET /communities`) are cursor-paginated. Shared schema + `buildPage` helper in `src/core/pagination.ts`; a `validateQuery` middleware parses `?limit=`(default 20, max 100)/`?cursor=` and stashes them on `req.pagination` (Express 5 makes `req.query` read-only, so it's not overwritten like `req.body`). Repos take `limit + 1` with `orderBy: [{ createdAt: 'desc' }, { id: 'desc' }]` and `cursor`+`skip: 1`; responses are a `{ items, nextCursor }` envelope (was a bare array — a deliberate breaking change to those reads). **Sort (2026-08-04, #7)**: `GET /posts` also takes `?sort=new|top` (`postListQuerySchema` spreads `paginationFields` + a `sort` enum); repo switches `orderBy` to `[{ score: 'desc' }, { id: 'desc' }]` for `top`, backed by `@@index([score])` on Post (migration `20260804030000_index_post_score`). `req.pagination` widened with optional `sort`.
+- **Feed filters (2026-09-30)**: `postsRepository.findAll(userId, pagination, filters)` takes its scope as an object — `{ communityId?, authorId? }` — not positional params, so the `where` composes instead of one filter shadowing the other. An empty object is a no-op `where` in Prisma, so the global feed needs no special case. `postsService.getAllPosts` passes it straight through. Post reads `select` only `author.username` rather than including the whole Profile row, so a new Profile column cannot leak into every feed. In the same pass, `findById`/`updateById` stopped including the full `comments` relation: the thread is read through the paginated `GET /posts/:postId/comments`, so including it meant `GET /posts/:id` shipped every comment on the post, unbounded (comment `content` has no max) and unread, on top of the first page the client then fetched properly. Only `_count.comments` comes along.
+- **Usernames are case-insensitive (2026-09-30)**: uniqueness is enforced on `lower(username)` by a hand-written functional index (migration `20260930000000_username_case_insensitive_unique`), because `String @unique` is byte-for-byte and let `alice` and `Alice` coexist — an impersonation vector once the username became the profile URL. Prisma cannot express an index on an expression, hence the raw SQL; verified with `prisma migrate diff` that it does **not** register as drift, so `migrate dev` will not try to drop it. The casing the caller typed is still what gets stored and displayed. `authRepository.findProfileByUsername` is an insensitive `findFirst` so the pre-insert check agrees with the database, and `createProfile` also catches `P2002` → `USERNAME_TAKEN` → 409, since a read-then-write check cannot stop two simultaneous signups.
 - **Error envelope (2026-08-04)**: every 4xx/5xx response is normalized to `{ error: { message, details? } }` by one `errorEnvelope` middleware (wraps `res.json`; controllers still send plain `{ message }`). `details` carries the Zod issues on validation failures. Single source of truth — change the shape in one file.
 - **CORS (2026-08-04)**: `cors` middleware in `app.ts`, allowlist from `CORS_ORIGIN` (comma-separated, defaults to `http://localhost:5173`). Non-browser clients (Postman, tests) unaffected.
 - **Lint/format (2026-08-07, #17)**: ESLint 10 flat config (`eslint.config.mjs`) with `typescript-eslint` **type-checked** rules + Prettier 3 (`.prettierrc.json`: 4-space, single quotes, semis, printWidth 100; JSON overridden to 2-space so npm doesn't fight it). Prettier and ESLint stay in separate lanes — `eslint-config-prettier` (last in the config) disables formatting rules; Prettier is NOT run through ESLint. Type-aware linting reads a lint-only `tsconfig.eslint.json` (extends the src-only build tsconfig, widened to cover `test/**` + `*.config.ts`). Two deliberate rule relaxations: `unbound-method` is **off globally** (controllers are object-literal handler namespaces passed to Express by reference; they never use `this`, and there are no classes here), and the `no-unsafe-*` family + `require-await` + `no-unnecessary-type-assertion` are **off under `test/**`** (supertest's `res.body` is `any`; asserting on it is what E2E tests do). Prettier ignores generated code, the hand-authored `*.md` docs, and the Postman export (its own 2-space format). CI runs `lint` + `format:check` after `prisma generate` (the type-aware parser needs the generated client to resolve `src` imports).
