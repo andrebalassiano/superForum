@@ -28,7 +28,7 @@ I built it partly as a learning project and partly as a reference for how I like
 
 ## How it's organized
 
-Each feature lives in its own module under `src/modules`: `auth`, `communities`, `posts`, `comments`, and `votes`. Every module splits into the same four layers. A router declares the routes and hangs the middleware off them. A controller deals with the request and the response and nothing else. A service holds the business logic. A repository is the only place that talks to Prisma. A request flows router → controller → service → repository on the way in, and back out the same way.
+Each feature lives in its own module under `src/modules`: `auth`, `profiles`, `communities`, `posts`, `comments`, and `votes`. Every module splits into the same four layers. A router declares the routes and hangs the middleware off them. A controller deals with the request and the response and nothing else. A service holds the business logic. A repository is the only place that talks to Prisma. A request flows router → controller → service → repository on the way in, and back out the same way.
 
 The point of that separation is that each layer only knows about the one beneath it. The controller doesn't know Prisma exists, and the repository doesn't know what an HTTP status code is. It makes the code easy to follow and easy to test a layer at a time. The shared middleware (the two auth guards and the Zod validators) lives in `src/middleware` and gets composed onto routes as needed. The app itself is small. `src/app.ts` builds the Express app and mounts everything under `/api`, and `src/server.ts` starts it on whatever port the environment gives it, defaulting to 3000.
 
@@ -40,7 +40,9 @@ Reads are generally public and writes need a bearer token. Some reads sit in bet
 | --- | --- | --- |
 | `POST /auth/profile` | Create the signed-in user's profile | required |
 | `GET /auth/me` | The caller's own profile | required |
-| `GET /auth/profiles/:id` | Any profile, by id | public |
+| `GET /profiles/:username` | A public profile and its reputation | public |
+| `GET /profiles/:username/posts` | That person's posts, paginated and sortable | public+ |
+| `GET /profiles/:username/comments` | That person's comments, paginated | public+ |
 | `GET /communities` | List communities, paginated | public |
 | `POST /communities` | Create a community | required |
 | `GET /communities/:id` | Read one community | public |
@@ -61,7 +63,7 @@ Reads are generally public and writes need a bearer token. Some reads sit in bet
 
 A comment is created under its post rather than at a top-level route, so the post id comes from the URL and never from the body. Voting is idempotent: `PUT` is an upsert underneath, so calling it again overwrites your previous vote instead of stacking. There's deliberately no "zero" vote, because removing one is a `DELETE`, which keeps the votes table free of meaningless rows. Every post and comment carries an aggregate `score` that reads return directly.
 
-The four list endpoints are cursor-paginated. Pass `?limit=` (default 20, max 100) and `?cursor=` (the id of the last row you saw) and you get back a `{ items, nextCursor }` envelope, where `nextCursor` is `null` once you reach the end. Ordering is newest-first with the row id as a tiebreak, so paging stays stable when two rows share a creation time, and it leans on an index rather than counting past skipped rows the way `OFFSET` does. The two post feeds also take `?sort=new|top`, where `top` ranks by vote score and is index-backed so it stays cheap at any depth.
+The six list endpoints are cursor-paginated. Pass `?limit=` (default 20, max 100) and `?cursor=` (the id of the last row you saw) and you get back a `{ items, nextCursor }` envelope, where `nextCursor` is `null` once you reach the end. Ordering is newest-first with the row id as a tiebreak, so paging stays stable when two rows share a creation time, and it leans on an index rather than counting past skipped rows the way `OFFSET` does. The three post feeds also take `?sort=new|top`, where `top` ranks by vote score and is index-backed so it stays cheap at any depth.
 
 ## Try it in Postman
 
@@ -83,23 +85,27 @@ A couple of smaller things. There's **one shared Prisma client** in `src/core/pr
 
 The vote **score** on a post or comment is **denormalized**. It's stored as a column and adjusted inside the same transaction as the vote itself, so a fresh upvote adds one and switching an upvote to a downvote subtracts two, rather than being summed over the votes table on every read. A read stays a single-row fetch no matter how many thousands of votes a post collects, and it's what lets the feed be ordered by score at all.
 
+A profile's **reputation** is the same quantity summed over everything you've written, and it goes the other way: it's computed on read, by two aggregate queries in one transaction, and stored nowhere. The reason is the difference between the two. A post's score sits on the sort path for the whole feed, so it earns the cost of being maintained on every vote. A reputation total is read on one page and never sorted by, so storing it would buy nothing and leave a second number that can disagree with the votes it's supposed to summarize.
+
 ## The data model
 
-A **Profile** is keyed by the user's Supabase auth UUID rather than a generated id, and has a unique username. A **Post** belongs to a profile (its author) and a community, and owns its comments and votes. A **Comment** belongs to a post and a profile. A **Community** has a unique name and owns its posts, which cascade-delete with it. **PostVote** and **CommentVote** are each unique per user-and-target pair, with a `value` of `1` or `-1`. The full schema, with its indexes and cascade rules, is in `prisma/schema.prisma`.
+A **Profile** is keyed by the user's Supabase auth UUID rather than a generated id, and has a unique username. Uniqueness is enforced case-insensitively, through an index on the lowercased value, so `alice` and `Alice` can't both exist. That matters because the username is also the profile's URL, and two accounts whose names differ only in capitals would be indistinguishable to anyone reading. A **Post** belongs to a profile (its author) and a community, and owns its comments and votes. A **Comment** belongs to a post and a profile. A **Community** has a unique name and owns its posts, which cascade-delete with it. **PostVote** and **CommentVote** are each unique per user-and-target pair, with a `value` of `1` or `-1`. The full schema, with its indexes and cascade rules, is in `prisma/schema.prisma`.
 
 ## The web client
 
-The client in `web/` is a React single-page app built with Vite and TypeScript, styled with Tailwind. It's a real consumer of the API rather than a mock-up: you can browse the feed, open a community or a post, sign in, vote, comment, write posts, and edit or delete your own.
+The client in `web/` is a React single-page app built with Vite and TypeScript, styled with Tailwind. It's a real consumer of the API rather than a mock-up: you can browse the feed, open a community, a post, or anyone's profile, sign in, vote, comment, write posts, and edit or delete your own.
 
 Server data is handled by TanStack Query rather than hand-rolled fetching in `useEffect`. The distinction it forces, between data that lives on the server and is only cached in the browser and state that belongs to the UI, is what shapes the whole client. Queries are keyed per resource, the feed and comment threads use `useInfiniteQuery` to consume the `{ items, nextCursor }` envelope directly, and an `IntersectionObserver` pulls the next page as you reach the bottom.
 
-Writes use two different strategies on purpose. Voting is **optimistic**: clicking a thumb updates the cached post immediately, in the feed and the community view and on the post page at once, applying the same score delta the server will, and rolling every cache back from a snapshot if the request fails. Creating a comment or a post instead **invalidates and refetches**, because the server assigns the id and the timestamp and there's nothing useful to guess at. Knowing which of those two a given write wants is most of what using a query cache well amounts to.
+Writes use two different strategies on purpose. Voting is **optimistic**: clicking a thumb updates the cached post immediately, in the feed, in a community, on a profile, and on the post page at once, applying the same score delta the server will, and rolling every cache back from a snapshot if the request fails. Creating a comment or a post instead **invalidates and refetches**, because the server assigns the id and the timestamp and there's nothing useful to guess at. Knowing which of those two a given write wants is most of what using a query cache well amounts to.
 
 ![A post with its comment thread](.github/images/post.png)
 
 A post page, seen by the account that wrote it. Edit and delete appear on anything of your own, on the post and on each comment. Which of them show is a rendering decision only, since the API re-checks ownership on every write and answers `403` regardless of what the client drew.
 
 Auth is the client half of the same JWT the API validates. `@supabase/supabase-js` handles sign-in and holds the session, refreshing the token on its own. A small React context makes the current user available anywhere without threading props, and one fetch wrapper attaches the token to every request, which is what makes personalized reads like `currentUserVote` come back filled in. That wrapper is also the only place that calls `fetch`, so it's where a 401 gets handled: if the stored session has gone stale it refreshes once and replays the request, and signs out if that fails, rather than leaving a dead session behind a UI that still claims you're logged in.
+
+Every author's name in a feed or a thread links to their profile at `/u/:username`, which shows their reputation and join month over two tabs: their posts, and their comments. The active tab lives in the query string, so a profile's comments can be linked to and survive a refresh, the same way the feed keeps its sort there. Comments shown on a profile are read-only and name the thread they came from, since a reply with no context around it isn't worth much and editing one belongs where its replies are visible.
 
 Styling is Tailwind over a small set of semantic design tokens. The palette lives as CSS variables that flip for dark mode and is handed to Tailwind through `@theme`, so light and dark are handled by the tokens themselves rather than by a `dark:` variant hung on every element.
 
@@ -139,7 +145,7 @@ Both need to be running to use the app. The client calls the API at `http://loca
 
 ### Demo content
 
-`npm run seed` fills the database with a handful of authors, four communities, and a dozen posts with comments and votes. It's worth running locally too, because a feed with three rows in it doesn't exercise pagination or sorting. Every row has a fixed id and is upserted, so running it twice updates the same rows rather than duplicating them, and it never touches anything it didn't create. The seeded authors are Profile rows with no Supabase account behind them, which is fine: a Profile is only the forum-side identity that posts point at, and nobody signs in as them. Post and comment scores are computed from the vote rows the seed writes rather than typed in by hand, so the denormalized `score` column agrees with the votes it summarizes.
+`npm run seed` fills the database with fourteen authors, four communities, eighteen posts, and twenty-one comments, with the votes behind them. Most of those authors mainly read and vote, which is both realistic and necessary: a post's score can't exceed the number of people around to vote on it, so a handful of authors meant nothing scored above four and every profile's reputation came out the same. It's worth running locally too, because a feed with three rows in it doesn't exercise pagination or sorting. Every row has a fixed id and is upserted, so running it twice updates the same rows rather than duplicating them, and it never touches anything it didn't create. The seeded authors are Profile rows with no Supabase account behind them, which is fine: a Profile is only the forum-side identity that posts point at, and nobody signs in as them. Post and comment scores are computed from the vote rows the seed writes rather than typed in by hand, so the denormalized `score` column agrees with the votes it summarizes.
 
 The deployed site also offers a shared demo account on the sign-in page, so a visitor can post and vote without signing up. It's a normal account created through the app, and the client shows the button only when `VITE_DEMO_EMAIL` and `VITE_DEMO_PASSWORD` are both set, which they are on the deployed build and aren't locally. Those values ship in the bundle like every `VITE_` variable, which is why the page prints them rather than pretending they're hidden. A password meant for the public isn't a secret, and the account holds nothing that isn't already public on a forum.
 
@@ -153,7 +159,7 @@ cp .env.test.example .env.test
 npm test                                          # or: npm run test:coverage
 ```
 
-The client has its own, smaller suite: Vitest with React Testing Library, run with `npm test` inside `web/`. It covers the parts where a mistake is quiet rather than loud, like the relative-time formatter at each of its boundaries, what a feed card renders and where its links point, and the optimistic voting logic. That last one is the interesting one to write. `VoteButtons` doesn't keep the score in component state. It writes the guessed result straight into the query cache so one vote updates the feed, the community feed, and the post page at once, and puts the old values back if the request fails. So the tests assert against the cache rather than the rendered number, because that's where the behaviour actually lives, and a test that only read the DOM would stay green while the other two views quietly stopped updating.
+The client has its own, smaller suite: Vitest with React Testing Library, run with `npm test` inside `web/`. It covers the parts where a mistake is quiet rather than loud, like the relative-time formatter at each of its boundaries, what a feed card renders and where its links point, and the optimistic voting logic. That last one is the interesting one to write. `VoteButtons` doesn't keep the score in component state. It writes the guessed result straight into the query cache so one vote updates the feed, a community's feed, a profile's posts, and the post page at once, and puts the old values back if the request fails. So the tests assert against the cache rather than the rendered number, because that's where the behaviour actually lives, and a test that only read the DOM would stay green while the other two views quietly stopped updating.
 
 Both suites run on every push and pull request through GitHub Actions as two parallel jobs, which is what the CI badge at the top reports. The coverage badge covers the API only.
 
@@ -171,7 +177,7 @@ One thing to expect from the free tiers: Render spins the API down after about f
 
 The project is finished in the sense that matters: both halves are complete, deployed, and working end to end, and the client's visual pass is done. The feed, communities, posts, and comments all have loading, empty, and error states, the layout works on a phone, and the whole thing is keyboard-accessible.
 
-What isn't there is mostly scope I drew a line around rather than work left half-done. Comments are a flat list instead of a nested thread, because nesting means a recursive structure, a recursive render, and pagination that no longer maps onto a flat cursor. There's no search. The client's tests cover its trickiest logic but not its pages, and nothing exercises "sign in, write a post, see it in the feed" as one journey in a real browser, which is the gap I'd close first with Playwright. And there's no observability anywhere: no structured logging, no metrics, no error reporting, so if this broke for a real user I'd hear about it from the user.
+What isn't there is mostly scope I drew a line around rather than work left half-done. Comments are a flat list instead of a nested thread, because nesting means a recursive structure, a recursive render, and pagination that no longer maps onto a flat cursor. There's no search. The client's tests cover its trickiest logic and one of its pages, but nothing exercises "sign in, write a post, see it in the feed" as one journey in a real browser, which is the gap I'd close first with Playwright. And there's no observability anywhere: no structured logging, no metrics, no error reporting, so if this broke for a real user I'd hear about it from the user.
 
 ## Credits
 

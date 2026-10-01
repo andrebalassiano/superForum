@@ -5,12 +5,14 @@ import { Routes, Route } from 'react-router';
 import { renderWithProviders } from '../test/renderWithProviders';
 import ProfilePage from './ProfilePage';
 import { apiFetch } from '../api';
-import { ApiError } from '../api';
 
-vi.mock('../api', async () => {
-    const actual = await vi.importActual<typeof import('../api')>('../api');
-    return { ...actual, apiFetch: vi.fn(), PAGE_SIZE: 5 };
-});
+// A plain factory, deliberately not one that pulls in the real module. Reaching for the real `../api`
+// executes it, and it imports the Supabase client, which throws at import time when
+// VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY are unset. That passes on a machine with a
+// web/.env.local and fails in CI, which has no secrets on purpose. Nothing here needs the real
+// module: ProfilePage only reads `error.message`, so a plain Error carries what the error branch
+// asserts on. (api.test.ts, which does test the real module, mocks ../lib/supabase instead.)
+vi.mock('../api', () => ({ apiFetch: vi.fn(), API_URL: '', PAGE_SIZE: 5 }));
 const mockedFetch = vi.mocked(apiFetch);
 
 const PROFILE = {
@@ -119,7 +121,7 @@ describe('ProfilePage', () => {
     });
 
     it('reports an unknown profile as an error rather than an empty page', async () => {
-        mockedFetch.mockRejectedValue(new ApiError('Profile not found', 404));
+        mockedFetch.mockRejectedValue(new Error('Profile not found'));
         renderAt('/u/nobody');
 
         await waitFor(() => expect(screen.getByText(/Could not load profile/)).toBeInTheDocument());

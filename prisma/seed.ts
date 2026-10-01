@@ -31,7 +31,51 @@ const HOUR = 60 * 60 * 1000;
 const now = Date.now();
 const hoursAgo = (h: number) => new Date(now - h * HOUR);
 
-const USERNAMES = ['maya_builds', 'devon', 'priya_k', 'tomas', 'june'];
+// The first five write most of the content; the rest mostly read and vote, which is roughly what a
+// forum looks like. More to the point, a post's score is capped by how many people exist to vote on it
+// (nobody votes for their own here), so five authors meant nothing could score above four and every
+// profile's reputation landed in the same narrow band.
+const USERNAMES = [
+    'maya_builds',
+    'devon',
+    'priya_k',
+    'tomas',
+    'june',
+    'ravi_s',
+    'noor',
+    'eli_t',
+    'sam_okafor',
+    'hana',
+    'wei_lin',
+    'ira',
+    'dmitri_v',
+    'cleo',
+];
+
+// Expands a vote tally into the (voter, value) pairs the vote rows are written from. The named
+// indexes are the ones whose votes mean something in context; `extraUp`/`extraDown` stand in for the
+// rest of the room. Extra voters are taken in index order from whoever has not already voted and is
+// not the author, so the result is identical on every run and the upserts stay idempotent.
+function resolveVotes(
+    authorIndex: number,
+    up: number[],
+    down: number[],
+    extraUp = 0,
+    extraDown = 0,
+): [number, 1 | -1][] {
+    const taken = new Set([authorIndex, ...up, ...down]);
+    const pool: number[] = [];
+    for (let i = 0; i < USERNAMES.length; i += 1) {
+        if (!taken.has(i)) pool.push(i);
+    }
+
+    return [
+        ...[...up, ...pool.slice(0, extraUp)].map((v) => [v, 1] as [number, 1]),
+        ...[...down, ...pool.slice(extraUp, extraUp + extraDown)].map(
+            (v) => [v, -1] as [number, -1],
+        ),
+    ];
+}
 
 const COMMUNITIES = [
     { name: 'announcements', owner: 0 },
@@ -46,6 +90,8 @@ interface SeedComment {
     hours: number;
     up?: number[];
     down?: number[];
+    extraUp?: number;
+    extraDown?: number;
 }
 
 interface SeedPost {
@@ -56,6 +102,10 @@ interface SeedPost {
     hours: number;
     up?: number[];
     down?: number[];
+    // See resolveVotes: these become real vote rows, they just save listing a dozen indexes by hand
+    // on every post, and adding an author later doesn't mean editing all of them.
+    extraUp?: number;
+    extraDown?: number;
     comments?: SeedComment[];
 }
 
@@ -69,6 +119,7 @@ const POSTS: SeedPost[] = [
         title: 'Welcome to superForum',
         body: 'This is a demo forum. Sign in with the demo account (or make your own) and you can post, comment, and vote like anywhere else.\n\nEverything here is seeded content — feel free to add to it.',
         hours: 200,
+        extraUp: 7,
         up: [1, 2, 3, 4],
         comments: [
             {
@@ -86,6 +137,7 @@ const POSTS: SeedPost[] = [
         title: 'What finally made cursor pagination click for me',
         body: "Offset pagination looks simpler until someone posts while you're on page two, and suddenly you're reading a row you already read. A cursor points at a specific row, so the page after it is stable no matter what got inserted in front.\n\nThe cost is that you can't jump to page seven. For a feed nobody wants to.",
         hours: 96,
+        extraUp: 6,
         up: [0, 2, 3, 4],
         down: [],
         comments: [
@@ -108,6 +160,7 @@ const POSTS: SeedPost[] = [
         title: 'Inferring types from your validation schema instead of writing them twice',
         body: 'If the schema already describes the shape, deriving the type from it means the two can never drift. Change the schema, the type changes, and every call site that no longer fits stops compiling.\n\nWriting an interface next to a schema is how you end up with a validator that accepts something your types say is impossible.',
         hours: 72,
+        extraUp: 5,
         up: [0, 1, 4],
         comments: [
             {
@@ -124,6 +177,8 @@ const POSTS: SeedPost[] = [
         title: 'Optimistic updates are mostly about the rollback',
         body: 'Applying the change before the server answers is the easy half. The half that decides whether it feels solid is putting it back exactly as it was when the request fails — including every other view showing the same thing.',
         hours: 54,
+        extraUp: 4,
+        extraDown: 1,
         up: [0, 1, 2],
         down: [4],
         comments: [
@@ -141,6 +196,7 @@ const POSTS: SeedPost[] = [
         title: 'Every cache is a bet that the world has not changed yet',
         body: 'And invalidation is just admitting you lost.',
         hours: 48,
+        extraUp: 3,
         up: [0, 1, 2, 3],
         comments: [{ author: 0, body: 'Putting this above my desk.', hours: 44, up: [4] }],
     },
@@ -150,6 +206,8 @@ const POSTS: SeedPost[] = [
         title: 'The unknown-key question',
         body: "Silently dropping a field the client sent hides typos. Rejecting the request surfaces them immediately, at the cost of being strict about what you accept.\n\nThis forum rejects them: send a key the schema doesn't know about and you get a 400 explaining which one.",
         hours: 36,
+        extraUp: 1,
+        extraDown: 7,
         up: [2, 3],
         down: [1],
         comments: [
@@ -173,6 +231,7 @@ const POSTS: SeedPost[] = [
         title: 'Deploying it taught me more than building it',
         body: 'Three things broke, and none of them could break locally: a client generated as ESM into a CommonJS build, a validation library sitting in devDependencies, and a production install skipping the compiler needed to build.\n\nAll three were invisible until something ran the real start command.',
         hours: 30,
+        extraUp: 8,
         up: [0, 1, 3, 4],
         comments: [
             {
@@ -189,6 +248,7 @@ const POSTS: SeedPost[] = [
         title: 'Naming a thing is just deciding what it is not',
         body: 'Spent an hour on a variable name today and the hour was the actual work.',
         hours: 26,
+        extraUp: 2,
         up: [3, 4],
     },
     {
@@ -197,6 +257,7 @@ const POSTS: SeedPost[] = [
         title: 'Sentinel values beat throwing for expected outcomes',
         body: '"Not found" and "not yours" aren\'t exceptional — they\'re two of the answers the function has. Returning a distinct value for each lets the layer above map them to a 404 and a 403 without unwrapping an error to find out which happened.',
         hours: 20,
+        extraUp: 5,
         up: [0, 2],
         comments: [
             {
@@ -213,6 +274,7 @@ const POSTS: SeedPost[] = [
         title: 'Accessible names are the API your UI exposes to everyone else',
         body: 'Swapping a label for an icon on small screens is fine until it takes the name with it. Put the name on the control with aria-label and hide the icon from the tree, and the button reads the same at every width.',
         hours: 14,
+        extraUp: 4,
         up: [0, 1, 2],
         comments: [
             {
@@ -229,6 +291,7 @@ const POSTS: SeedPost[] = [
         title: 'Free tiers sleep, and that is fine',
         body: 'The API here spins down after about fifteen minutes of quiet, so the first load after a lull can take a moment while it wakes. The loading skeletons cover it.',
         hours: 8,
+        extraUp: 3,
         up: [1, 3],
     },
     {
@@ -237,6 +300,7 @@ const POSTS: SeedPost[] = [
         title: 'The bug is almost never where the error is',
         body: 'It is where the assumption was.',
         hours: 3,
+        extraUp: 6,
         up: [0, 1, 3, 4],
         comments: [
             {
@@ -244,6 +308,131 @@ const POSTS: SeedPost[] = [
                 body: 'Hence reading logs top to bottom instead of jumping to the red line.',
                 hours: 1,
                 up: [2],
+            },
+        ],
+    },
+    // Author 0 carries several of these on purpose: a profile needs more than one page of posts for
+    // the profile feed's paging to be worth anything, and PAGE_SIZE on the client is 5.
+    {
+        community: 0,
+        author: 0,
+        title: 'House rules, such as they are',
+        body: 'Post things you would want to read. Vote on what you found useful rather than what you agreed with. That is the whole list.\n\nYou can edit or delete anything you wrote, and nothing you did not — the server checks on every request, not just when the button is showing.',
+        hours: 180,
+        up: [1, 3],
+        extraUp: 8,
+        comments: [
+            {
+                author: 6,
+                body: 'Short enough that people might actually read it.',
+                hours: 176,
+                up: [0],
+                extraUp: 3,
+            },
+        ],
+    },
+    {
+        community: 2,
+        author: 0,
+        title: 'A 403 and a 404 are different answers to different questions',
+        body: 'Returning 404 for something that exists but is not yours hides the fact that it exists, which is occasionally what you want and usually just confusing. Returning 403 admits it is there and says you cannot touch it.\n\nThe tell that you have it right: the code that decides can distinguish "no such row" from "not your row" without squinting.',
+        hours: 120,
+        up: [2, 3, 4],
+        extraUp: 6,
+        extraDown: 1,
+        comments: [
+            {
+                author: 2,
+                body: 'The leak is real though. On something private, 404 for both is the safer default.',
+                hours: 116,
+                up: [0, 3],
+                extraUp: 2,
+            },
+            {
+                author: 8,
+                body: 'Depends entirely on whether the id is guessable. Sequential ids, hide it; random UUIDs, less of an issue.',
+                hours: 112,
+                up: [2],
+                extraUp: 4,
+            },
+        ],
+    },
+    {
+        community: 1,
+        author: 0,
+        title: 'Testing the cache instead of the pixels',
+        body: 'The vote counter on a card reads from a prop. Assert on the rendered number and your test passes even after the thing that updates every other view of that post quietly stops working.\n\nSo the test reads the cache. It is less obvious and it is the only version that can fail for the right reason.',
+        hours: 64,
+        up: [1, 2, 4],
+        extraUp: 7,
+        comments: [
+            {
+                author: 4,
+                body: 'Took me a while to accept that "render the component and look at it" is sometimes the weaker test.',
+                hours: 58,
+                up: [0, 1],
+                extraUp: 2,
+            },
+        ],
+    },
+    {
+        community: 3,
+        author: 0,
+        title: 'Every config file is a decision someone forgot they made',
+        body: 'Found a two-line file today whose only job was to undo a default I set six weeks ago for a reason I can no longer reconstruct.',
+        hours: 44,
+        up: [1, 2, 3, 4],
+        extraUp: 5,
+        comments: [
+            {
+                author: 9,
+                body: 'This is why the comment goes in the config and not in the commit message.',
+                hours: 40,
+                up: [0, 2],
+                extraUp: 3,
+            },
+        ],
+    },
+    {
+        community: 1,
+        author: 1,
+        title: 'The second door onto your database',
+        body: 'Spent a week hardening an API — every write behind a token, every mutation checking who owns the row — and then found the hosting platform had been serving the same tables over a second HTTP interface the whole time, authorized by a key that ships in the browser bundle.\n\nIt was closed, as it turned out, but only because the platform defaulted that way. Nothing in the project said so.',
+        hours: 18,
+        up: [0, 2, 3, 4],
+        extraUp: 7,
+        comments: [
+            {
+                author: 0,
+                body: 'A trust boundary is not where your code is. It is wherever your data can be reached from.',
+                hours: 14,
+                up: [1, 2, 3],
+                extraUp: 4,
+            },
+            {
+                author: 7,
+                body: 'Writing the lockdown into a migration is the part I would have skipped. Glad you did not.',
+                hours: 12,
+                up: [1],
+                extraUp: 2,
+            },
+        ],
+    },
+    {
+        community: 2,
+        author: 5,
+        title: 'Reading the error instead of the error you expected',
+        body: 'Chased a foreign key violation for an hour. It was not a foreign key violation. The log had said so from the first line.',
+        hours: 6,
+        up: [0, 1],
+        extraUp: 3,
+        comments: [
+            {
+                author: 3,
+                body: 'Fixing the code for the error you assumed is a great way to not fix anything.',
+                hours: 4,
+                up: [0, 5],
+                extraUp: 2,
             },
         ],
     },
@@ -274,9 +463,14 @@ async function main() {
     let nextComment = 0;
 
     for (const [i, post] of POSTS.entries()) {
-        const up = post.up ?? [];
-        const down = post.down ?? [];
-        const score = up.length - down.length;
+        const votes = resolveVotes(
+            post.author,
+            post.up ?? [],
+            post.down ?? [],
+            post.extraUp,
+            post.extraDown,
+        );
+        const score = votes.reduce((sum, [, value]) => sum + value, 0);
         const createdAt = hoursAgo(post.hours);
 
         const fields = {
@@ -297,10 +491,7 @@ async function main() {
 
         // The vote rows the score above summarizes. Keyed by (post, user), so a re-run updates the
         // same vote rather than failing on the unique constraint.
-        for (const [voter, value] of [
-            ...up.map((u) => [u, 1] as const),
-            ...down.map((d) => [d, -1] as const),
-        ]) {
+        for (const [voter, value] of votes) {
             await prisma.postVote.upsert({
                 where: { postId_userId: { postId: postId(i), userId: userId(voter) } },
                 update: { value },
@@ -309,14 +500,19 @@ async function main() {
         }
 
         for (const comment of post.comments ?? []) {
-            const cUp = comment.up ?? [];
-            const cDown = comment.down ?? [];
+            const cVotes = resolveVotes(
+                comment.author,
+                comment.up ?? [],
+                comment.down ?? [],
+                comment.extraUp,
+                comment.extraDown,
+            );
             const cId = commentId(nextComment++);
             const cCreatedAt = hoursAgo(comment.hours);
 
             const cFields = {
                 content: comment.body,
-                score: cUp.length - cDown.length,
+                score: cVotes.reduce((sum, [, value]) => sum + value, 0),
                 createdAt: cCreatedAt,
                 updatedAt: cCreatedAt,
                 authorId: userId(comment.author),
@@ -329,10 +525,7 @@ async function main() {
                 create: { id: cId, ...cFields },
             });
 
-            for (const [voter, value] of [
-                ...cUp.map((u) => [u, 1] as const),
-                ...cDown.map((d) => [d, -1] as const),
-            ]) {
+            for (const [voter, value] of cVotes) {
                 await prisma.commentVote.upsert({
                     where: { commentId_userId: { commentId: cId, userId: userId(voter) } },
                     update: { value },
