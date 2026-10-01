@@ -50,7 +50,7 @@ be running for the app to work locally: the API on 3000, Vite on 5173.
 
 ## Tests (API)
 
-88 Vitest + supertest integration tests across all five modules, driving the real Express app end to
+106 Vitest + supertest integration tests across all six modules, driving the real Express app end to
 end. Supabase auth is mocked at the client boundary (`test/setup/each-setup.ts`, two users
 Alice/Bob), so no real tokens are needed; the suite runs against a throwaway Postgres, migrated fresh
 and truncated between tests.
@@ -102,12 +102,13 @@ router → controller → service → repository
 
 ## Module status
 
-All five modules are implemented and wired into the main router (`src/routers/index.ts`):
+All six modules are implemented and wired into the main router (`src/routers/index.ts`):
 
 - `auth` — profiles + current-user resolution (`POST /auth/profile`, `GET /auth/me`). A public `GET /auth/profiles/:id` existed from the pre-client build and was deleted 2026-09-30: nothing ever consumed it, and public profile reads are keyed by username, not id.
 - `posts` — full CRUD; write routes require `requireAuth` and run `validateBody`/`validateParams`; `authorId` comes from `req.user.id` (not the body); reads use `optionalAuth` and include `currentUserVote`; `GET /posts` is cursor-paginated with a `?sort=new|top` feed sort (`?limit=&cursor=` → `{ items, nextCursor }`); PATCH/DELETE enforce author ownership
 - `communities` — full CRUD (renamed from `subreddits` on 2026-07-20); has an `ownerId`; `GET /communities` is a public cursor-paginated list; `GET /communities/:id/posts` lists a community's posts (nested router owned by the posts module — `communityPostsRouter`, `mergeParams`, mounted at `/communities/:id/posts`; reuses `postsController.getPostsByCommunity` → `getAllPosts(userId, pagination, { communityId })`, same envelope/sort/currentUserVote as `GET /posts`; empty page for a missing/empty community, not a 404); PATCH/DELETE enforce owner ownership
 - `comments` — full CRUD; create and list are nested under the post (`POST`/`GET /posts/:postId/comments`, `postId` from the URL), read/update/delete a single comment at `/comments/:id`; PATCH/DELETE enforce author ownership
+- `profiles` — public profile reads (2026-09-30). `GET /profiles/:username` returns id, username, `createdAt`, `_count: { posts, comments }` and a derived `reputation: { posts, comments, total }`. Reputation is net votes received, computed on read by two `aggregate` calls in one transaction — NOT denormalized onto Profile, unlike `Post.score`, because it is read on one page and never sorted by. Prisma's `_sum` is `null` with no matching rows, so the service coalesces to 0. The lookup is an insensitive `findFirst` matching the `lower(username)` uniqueness rule, and the response is an explicit `select` so a new Profile column cannot leak onto a public endpoint. The module owns the entity only: the two tabs are `GET /profiles/:username/posts` (`profilePostsRouter`, posts module) and `GET /profiles/:username/comments` (`profileCommentsRouter`, comments module), each owned by whichever module owns the resource being listed, the same way `/communities/:id/posts` is. Both resolve the username first and answer **404** for an unknown one — deliberately unlike the community feed, which serves an empty page because it can filter without ever looking the community up; a profile feed has to resolve the name to get an id, so it already knows. An existing author with nothing written gets an empty page, not a 404.
 - `votes` — post & comment votes via `PUT`/`DELETE` on `/posts/:postId/vote` and `/comments/:commentId/vote` (upsert toggle); `userId` from the token
 
 ## Key conventions
