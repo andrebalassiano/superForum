@@ -28,25 +28,30 @@ export function makeCommunity(ownerId: string, name?: string) {
     });
 }
 
+// `score` is settable because a profile's reputation is the sum of these, and building a known
+// total out of real votes would need one distinct voter per point. The vote path's own maintenance
+// of score is covered by the votes suite; here the score is just arranged state.
 export function makePost(
     authorId: string,
     communityId: string,
-    overrides?: { title?: string; content?: string },
+    overrides?: { title?: string; content?: string; score?: number },
 ) {
     return prisma.post.create({
         data: {
             title: overrides?.title ?? 'Seed title',
             content: overrides?.content ?? 'Seed content',
+            score: overrides?.score ?? 0,
             author: { connect: { id: authorId } },
             community: { connect: { id: communityId } },
         },
     });
 }
 
-export function makeComment(authorId: string, postId: string, content = 'Seed comment') {
+export function makeComment(authorId: string, postId: string, content = 'Seed comment', score = 0) {
     return prisma.comment.create({
         data: {
             content,
+            score,
             author: { connect: { id: authorId } },
             post: { connect: { id: postId } },
         },
