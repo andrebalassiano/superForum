@@ -34,6 +34,22 @@ const postsService = {
         return { items: posts, nextCursor };
     },
 
+    // GET /profiles/:username/posts. Resolves the username so an unknown one is a 404, then hands
+    // off to getAllPosts with an authorId filter — the feed, its sort, its envelope and its
+    // currentUserVote all come along unchanged because the only difference is the where clause.
+    async getPostsByAuthorUsername(
+        username: string,
+        userId: string | undefined,
+        pagination: PaginationQueryDTO & { sort?: 'new' | 'top' },
+    ) {
+        const profile = await authRepository.findProfileByUsername(username);
+        if (!profile) {
+            return PROFILE_NOT_FOUND;
+        }
+
+        return postsService.getAllPosts(userId, pagination, { authorId: profile.id });
+    },
+
     // authorId now comes from the authenticated caller (req.user.id), not the request body
     async createPost(authorId: string, dto: CreatePostDTO) {
         // Pre-check the caller's Profile so a missing profile returns a precise 404 instead of

@@ -80,6 +80,31 @@ const commentsService = {
         return { items: comments, nextCursor };
     },
 
+    // GET /profiles/:username/comments. Resolves the username first, so an unknown one answers 404
+    // rather than an empty page — unlike the community feed, which can serve a filtered query without
+    // ever looking the community up and so would need an extra query purely to be strict. Be as
+    // precise as the information the query already has to fetch.
+    async getCommentsByAuthorUsername(
+        username: string,
+        userId: string | undefined,
+        pagination: PaginationQueryDTO,
+    ) {
+        const profile = await authRepository.findProfileByUsername(username);
+        if (!profile) {
+            return PROFILE_NOT_FOUND;
+        }
+
+        const rows = await commentsRepository.findByAuthorId(profile.id, userId, pagination);
+        const { items, nextCursor } = buildPage(rows, pagination.limit);
+
+        const comments = items.map((comment) => {
+            const { votes, ...rest } = comment;
+            return { ...rest, currentUserVote: votes?.[0]?.value ?? null };
+        });
+
+        return { items: comments, nextCursor };
+    },
+
     // build the update payload from only the fields that were sent (PATCH semantics)
     async updateComment(id: string, userId: string, dto: UpdateCommentDTO) {
         // Ownership gate: only the author may edit. Fetch first so we can distinguish

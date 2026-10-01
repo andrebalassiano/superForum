@@ -1,10 +1,17 @@
 import express from 'express';
 
 import prisma from '../core/prismaSingleton';
-import postsRouter, { communityPostsRouter } from '../modules/posts/posts.router';
+import postsRouter, {
+    communityPostsRouter,
+    profilePostsRouter,
+} from '../modules/posts/posts.router';
 import authRouter from '../modules/auth/auth.router';
-import commentsRouter, { postCommentsRouter } from '../modules/comments/comments.router';
+import commentsRouter, {
+    postCommentsRouter,
+    profileCommentsRouter,
+} from '../modules/comments/comments.router';
 import communitiesRouter from '../modules/communities/communities.router';
+import profilesRouter from '../modules/profiles/profiles.router';
 import { postVotesRouter, commentVotesRouter } from '../modules/votes/votes.router';
 
 const router = express.Router();
@@ -35,5 +42,10 @@ router.use('/posts/:postId/vote', postVotesRouter);
 router.use('/communities', communitiesRouter);
 // nested list route — exposes GET /communities/:id/posts via the posts module
 router.use('/communities/:id/posts', communityPostsRouter);
+router.use('/profiles', profilesRouter);
+// nested list routes — the two tabs of a profile page, each owned by the module that owns the
+// resource being listed rather than by the profiles module
+router.use('/profiles/:username/posts', profilePostsRouter);
+router.use('/profiles/:username/comments', profileCommentsRouter);
 
 export default router;

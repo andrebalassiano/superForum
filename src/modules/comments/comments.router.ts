@@ -12,6 +12,7 @@ import {
     postIdParamsSchema,
 } from './comments.schemas';
 import { paginationQuerySchema } from '../../core/pagination';
+import { usernameParamsSchema } from '../profiles/profiles.schemas';
 
 // Single-comment routes (read / update / delete), mounted at /comments in the main router.
 // Creation lives on the nested postCommentsRouter below, since a comment belongs to a post.
@@ -53,5 +54,19 @@ postCommentsRouter
         commentsController.createCommentForPost,
     );
 
+// Nested list route, mounted at /profiles/:username/comments in the main router. mergeParams so
+// :username from the outer mount is visible here. Read-only: a comment is created in its thread, not
+// from a profile page, so there is no POST on this router.
+const profileCommentsRouter = express.Router({ mergeParams: true });
+
+profileCommentsRouter
+    .route('/')
+    .get(
+        optionalAuth,
+        validateParams(usernameParamsSchema),
+        validateQuery(paginationQuerySchema),
+        commentsController.getCommentsByAuthor,
+    );
+
 export default commentsRouter;
-export { postCommentsRouter };
+export { postCommentsRouter, profileCommentsRouter };

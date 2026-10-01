@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import postsService, { FORBIDDEN, PROFILE_NOT_FOUND } from './posts.service';
 import { CreatePostDTO, IdParamsDTO, UpdatePostDTO } from './posts.schemas';
+import { UsernameParamsDTO } from '../profiles/profiles.schemas';
 
 const postsController = {
     async getPosts(req: Request, res: Response) {
@@ -31,6 +32,32 @@ const postsController = {
             const posts = await postsService.getAllPosts(req.user?.id, pagination, {
                 communityId: id,
             });
+
+            return res.status(200).json(posts);
+        } catch (error) {
+            console.error(error);
+
+            return res.status(500).json({ message: 'Failed to fetch posts' });
+        }
+    },
+
+    // GET /profiles/:username/posts — the posts tab of a profile page. Same pipeline as getPosts
+    // (optionalAuth → currentUserVote, cursor pagination, ?sort=), filtered to one author.
+    async getPostsByAuthor(req: Request<UsernameParamsDTO>, res: Response) {
+        const { username } = req.params;
+
+        try {
+            const pagination = req.pagination ?? { limit: 20 };
+            const posts = await postsService.getPostsByAuthorUsername(
+                username,
+                req.user?.id,
+                pagination,
+            );
+
+            // No such user is a 404; a user who simply hasn't posted is an empty page.
+            if (posts === PROFILE_NOT_FOUND) {
+                return res.status(404).json({ message: 'Profile not found' });
+            }
 
             return res.status(200).json(posts);
         } catch (error) {

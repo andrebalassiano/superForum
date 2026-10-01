@@ -11,6 +11,7 @@ import {
     idParamsSchema,
     postListQuerySchema,
 } from './posts.schemas';
+import { usernameParamsSchema } from '../profiles/profiles.schemas';
 
 const postsRouter = express.Router();
 
@@ -54,5 +55,19 @@ communityPostsRouter
         postsController.getPostsByCommunity,
     );
 
+// Nested list route, mounted at /profiles/:username/posts in the main router. Same shape as
+// communityPostsRouter — mergeParams so :username from the outer mount is visible, and the same
+// postListQuerySchema so a profile feed supports ?limit/?cursor/?sort like every other post feed.
+const profilePostsRouter = express.Router({ mergeParams: true });
+
+profilePostsRouter
+    .route('/')
+    .get(
+        optionalAuth,
+        validateParams(usernameParamsSchema),
+        validateQuery(postListQuerySchema),
+        postsController.getPostsByAuthor,
+    );
+
 export default postsRouter;
-export { communityPostsRouter };
+export { communityPostsRouter, profilePostsRouter };

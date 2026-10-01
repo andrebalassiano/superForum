@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import commentsService, { FORBIDDEN, PROFILE_NOT_FOUND } from './comments.service';
+import { UsernameParamsDTO } from '../profiles/profiles.schemas';
 import {
     CreateCommentBodyDTO,
     IdParamsDTO,
@@ -75,6 +76,31 @@ const commentsController = {
             );
 
             // empty list is a valid result (post simply has no comments yet) — don't 404
+            return res.status(200).json(comments);
+        } catch (error) {
+            console.error(error);
+            return res.status(500).json({ message: 'Failed to fetch comments' });
+        }
+    },
+
+    // GET /profiles/:username/comments — the comments tab of a profile page. optionalAuth, so an
+    // anonymous reader sees the list and a signed-in one also gets their own vote on each row.
+    async getCommentsByAuthor(req: Request<UsernameParamsDTO>, res: Response) {
+        const { username } = req.params;
+
+        try {
+            const pagination = req.pagination ?? { limit: 20 };
+            const comments = await commentsService.getCommentsByAuthorUsername(
+                username,
+                req.user?.id,
+                pagination,
+            );
+
+            // No such user is a 404; a user who simply hasn't commented is an empty page.
+            if (comments === PROFILE_NOT_FOUND) {
+                return res.status(404).json({ message: 'Profile not found' });
+            }
+
             return res.status(200).json(comments);
         } catch (error) {
             console.error(error);
