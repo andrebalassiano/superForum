@@ -40,6 +40,23 @@ export interface Profile {
     username: string;
 }
 
+// A public profile, as GET /profiles/:username returns it. Kept separate from Profile above
+// rather than widening it: /auth/me answers with just { id, username }, and a type that promised
+// reputation there would be lying. `reputation` is net votes received, computed by the API on read.
+export interface PublicProfile {
+    id: string;
+    username: string;
+    createdAt: string;
+    _count: { posts: number; comments: number };
+    reputation: { posts: number; comments: number; total: number };
+}
+
+// One row of GET /profiles/:username/comments. A comment plus the thread it belongs to — without
+// the post there is nothing to link to and nothing to label the link with.
+export interface ProfileComment extends Comment {
+    post: { id: string; title: string };
+}
+
 // A community, as GET /communities returns it — just what the "new post" picker needs.
 export interface Community {
     id: string;

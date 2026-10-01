@@ -22,9 +22,11 @@ export function makeTestQueryClient() {
     });
 }
 
+// `initialEntries` seeds the MemoryRouter's history, for a component that reads the URL — a page
+// behind a route param, or one that keeps state in the query string. Most tests don't need it.
 export function renderWithProviders(
     ui: ReactElement,
-    { signedIn = true, queryClient = makeTestQueryClient() } = {},
+    { signedIn = true, queryClient = makeTestQueryClient(), initialEntries = ['/'] } = {},
 ) {
     const auth: AuthContextValue = {
         session: null,
@@ -39,7 +41,7 @@ export function renderWithProviders(
         return (
             <QueryClientProvider client={queryClient}>
                 <AuthContext.Provider value={auth}>
-                    <MemoryRouter>{children}</MemoryRouter>
+                    <MemoryRouter initialEntries={initialEntries}>{children}</MemoryRouter>
                 </AuthContext.Provider>
             </QueryClientProvider>
         );
