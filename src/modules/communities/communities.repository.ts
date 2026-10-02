@@ -19,9 +19,19 @@ const communitiesRepository = {
         });
     },
 
+    // `_count.posts` rides along because two callers need it: the delete gate (a community with
+    // posts in it can't be removed) and the client, which disables the button and says why rather
+    // than offering an action the API will refuse.
     async findById(where: Prisma.CommunityWhereUniqueInput) {
         return prisma.community.findUnique({
             where,
+            include: {
+                _count: {
+                    select: {
+                        posts: true,
+                    },
+                },
+            },
         });
     },
 

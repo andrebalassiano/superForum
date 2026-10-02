@@ -13,6 +13,13 @@ export const FORBIDDEN = 'FORBIDDEN' as const;
 // modules use; without it the owner connect throws P2025 and surfaces as an opaque 500.
 export const PROFILE_NOT_FOUND = 'PROFILE_NOT_FOUND' as const;
 
+// Returned by deleteCommunity when the community still has posts in it — the controller maps it to
+// 409. Community cascade-deletes its posts, which cascade to their comments and votes, so deleting a
+// busy community would destroy other people's writing. An owner can remove one they created by
+// mistake; once other people have posted, that content isn't theirs to erase. Enforced here rather
+// than in the client, because a guard that only exists in the UI isn't a guard.
+export const HAS_POSTS = 'HAS_POSTS' as const;
+
 const communitiesService = {
     // check the name isn't taken first — returning null lets the controller respond with 409 instead of letting Prisma throw on the unique constraint
     async createCommunity(ownerId: string, dto: CreateCommunityDTO) {
@@ -88,6 +95,9 @@ const communitiesService = {
         }
         if (existing.ownerId !== userId) {
             return FORBIDDEN;
+        }
+        if (existing._count.posts > 0) {
+            return HAS_POSTS;
         }
 
         try {

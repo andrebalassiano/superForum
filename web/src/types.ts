@@ -57,6 +57,17 @@ export interface ProfileComment extends Comment {
     post: { id: string; title: string };
 }
 
+// One community as GET /communities/:id returns it. Richer than the list shape because the page
+// needs two things the picker doesn't: `ownerId`, to decide whether to offer the delete control at
+// all, and `_count.posts`, because a community with posts in it cannot be deleted (the API answers
+// 409) and the UI should say so rather than offer an action that will fail.
+export interface CommunityDetail {
+    id: string;
+    name: string;
+    ownerId: string;
+    _count: { posts: number };
+}
+
 // A community, as GET /communities returns it — just what the "new post" picker needs.
 export interface Community {
     id: string;

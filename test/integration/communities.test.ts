@@ -259,16 +259,65 @@ describe('communities: ownership on PATCH/DELETE', () => {
         expect(res.status).toBe(403);
     });
 
-    it('cascades: deleting a community removes its posts', async () => {
+    // 409 rather than 403: the owner IS allowed to delete this community, just not while other
+    // people's posts would be cascade-deleted with it. Conflict, not permission.
+    it('refuses to delete a community that still has posts (409)', async () => {
         const community = await makeCommunity(TEST_USERS.alice.id);
         const post = await makePost(TEST_USERS.alice.id, community.id);
 
-        const del = await request(app)
+        const res = await request(app)
             .delete(`/api/communities/${community.id}`)
             .set('Authorization', authHeader(TEST_USERS.alice));
-        expect(del.status).toBe(204);
 
+        expect(res.status).toBe(409);
+
+        // the refusal has to actually leave everything in place
         const getPost = await request(app).get(`/api/posts/${post.id}`);
-        expect(getPost.status).toBe(404);
+        expect(getPost.status).toBe(200);
+        const getCommunity = await request(app).get(`/api/communities/${community.id}`);
+        expect(getCommunity.status).toBe(200);
+    });
+
+    it('allows the delete once the posts are gone', async () => {
+        const community = await makeCommunity(TEST_USERS.alice.id);
+        const post = await makePost(TEST_USERS.alice.id, community.id);
+
+        const blocked = await request(app)
+            .delete(`/api/communities/${community.id}`)
+            .set('Authorization', authHeader(TEST_USERS.alice));
+        expect(blocked.status).toBe(409);
+
+        await request(app)
+            .delete(`/api/posts/${post.id}`)
+            .set('Authorization', authHeader(TEST_USERS.alice));
+
+        const res = await request(app)
+            .delete(`/api/communities/${community.id}`)
+            .set('Authorization', authHeader(TEST_USERS.alice));
+
+        expect(res.status).toBe(204);
+    });
+
+    // The cascade is still configured in the schema and is the whole reason the gate above exists:
+    // without it, one request would erase every post and comment anyone had written there. Exercised
+    // through Prisma because the API no longer offers a path to it.
+    it('schema still cascades posts when a community row is removed', async () => {
+        const community = await makeCommunity(TEST_USERS.alice.id);
+        const post = await makePost(TEST_USERS.alice.id, community.id);
+
+        await prisma.community.delete({ where: { id: community.id } });
+
+        expect(await prisma.post.findUnique({ where: { id: post.id } })).toBeNull();
+    });
+
+    it('reports the post count on a single community read', async () => {
+        const community = await makeCommunity(TEST_USERS.alice.id);
+        await makePost(TEST_USERS.alice.id, community.id);
+
+        const res = await request(app).get(`/api/communities/${community.id}`);
+
+        // the client reads this to disable its delete button and say why
+        expect(res.status).toBe(200);
+        expect(res.body._count.posts).toBe(1);
     });
 });

@@ -46,7 +46,7 @@ Reads are generally public and writes need a bearer token. Some reads sit in bet
 | `GET /communities` | List communities, paginated | public |
 | `POST /communities` | Create a community | required |
 | `GET /communities/:id` | Read one community | public |
-| `PATCH` `DELETE /communities/:id` | Update or remove it, owner only | required |
+| `PATCH` `DELETE /communities/:id` | Update, or remove it once empty, owner only | required |
 | `GET /communities/:id/posts` | That community's feed | public+ |
 | `GET /posts` | The main feed, paginated and sortable | public+ |
 | `POST /posts` | Write a post | required |
@@ -60,6 +60,8 @@ Reads are generally public and writes need a bearer token. Some reads sit in bet
 | `DELETE /posts/:postId/vote` | Take your vote back | required |
 | `PUT` `DELETE /comments/:commentId/vote` | The same, for a comment | required |
 | `GET /health` | Liveness check that runs a real query | public |
+
+Deleting a community is the one write with a second condition on it. A community cascade-deletes its posts, and those cascade to their comments and votes, so the API refuses with a 409 while any posts remain. An owner can remove one they created by mistake; once other people have written there, that content isn't theirs to erase. The client reads the same post count and explains the rule rather than offering a button that would fail. Renaming a community is possible through the API and deliberately not offered in the UI, because the name is the only editable field and changing it would move the topic out from under everyone who already posted.
 
 A comment is created under its post rather than at a top-level route, so the post id comes from the URL and never from the body. Voting is idempotent: `PUT` is an upsert underneath, so calling it again overwrites your previous vote instead of stacking. There's deliberately no "zero" vote, because removing one is a `DELETE`, which keeps the votes table free of meaningless rows. Every post and comment carries an aggregate `score` that reads return directly.
 

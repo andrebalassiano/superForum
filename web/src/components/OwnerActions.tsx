@@ -2,7 +2,10 @@ import { useState } from 'react';
 import Button from './Button';
 
 interface OwnerActionsProps {
-    onEdit: () => void;
+    /** Omit to render Delete on its own. A community is deletable but deliberately not editable:
+     *  its name is the only mutable field, and renaming it would change the topic out from under
+     *  everyone who already posted there. */
+    onEdit?: () => void;
     onDelete: () => void;
     isDeleting?: boolean;
     /** What's being removed, for the confirmation line: "Delete this post?" */
@@ -47,9 +50,11 @@ function OwnerActions({ onEdit, onDelete, isDeleting = false, label }: OwnerActi
 
     return (
         <div className="flex items-center gap-1">
-            <Button type="button" variant="ghost" className="px-2 py-1" onClick={onEdit}>
-                Edit
-            </Button>
+            {onEdit && (
+                <Button type="button" variant="ghost" className="px-2 py-1" onClick={onEdit}>
+                    Edit
+                </Button>
+            )}
             <Button
                 type="button"
                 variant="ghost"

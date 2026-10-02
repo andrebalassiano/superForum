@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import communitiesService, { FORBIDDEN, PROFILE_NOT_FOUND } from './communities.service';
+import communitiesService, { FORBIDDEN, HAS_POSTS, PROFILE_NOT_FOUND } from './communities.service';
 import { CreateCommunityDTO, IdParamsDTO, UpdateCommunityDTO } from './communities.schemas';
 
 const communitiesController = {
@@ -105,6 +105,14 @@ const communitiesController = {
                 return res
                     .status(403)
                     .json({ message: 'You can only modify your own communities' });
+            }
+
+            // 409 rather than 403: the caller IS allowed to delete this community, just not while
+            // other people's posts would go with it. Conflict, not permission.
+            if (community === HAS_POSTS) {
+                return res.status(409).json({
+                    message: 'This community still has posts in it. Delete them first.',
+                });
             }
 
             if (!community) {
