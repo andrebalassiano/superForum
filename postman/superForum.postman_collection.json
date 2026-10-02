@@ -2,14 +2,46 @@
   "info": {
     "_postman_id": "4334e3e6-1d42-49c3-9f61-2b75293d6495",
     "name": "superForum",
-    "description": "# superForum API — end-to-end collection\n\nA runnable, happy-path walkthrough of the superForum REST API: sign in, create a\ncommunity, write a post and a comment, vote, read everything back, then tidy up.\nThe folders are ordered as a full resource lifecycle, so the whole collection runs\ntop to bottom in a single pass.\n\n## Setup\n\n1. Start the API locally — `npm run dev` (serves `http://localhost:3000`).\n2. Create a Postman **environment** with three variables:\n   - `baseUrl`     — `http://localhost:3000/api`\n   - `supabaseUrl` — your Supabase project URL (`https://<project>.supabase.co`)\n   - `supabaseKey` — the Supabase publishable / anon key\n\n   You don't set `token`, `userId`, `communityId`, `postId`, or `commentId` — the\n   requests capture those automatically as they run.\n\n## Running it\n\nRun the folders in order (Collection Runner, or top to bottom by hand) against a\n**fresh database**:\n\n**Auth → Communities → Posts → Comments → Votes → Teardown**\n\n`Supabase: Sign-in` stores the JWT in `{{token}}`, which every authenticated request\ninherits as a Bearer token via the collection's auth setting. Each create step saves\nthe new record's id for the requests that follow.\n\nHeadless, via newman:\n\nnewman run superForum.postman_collection.json -e your-env.json\n\n\n\n## Notes\n\n- `Supabase: Sign-up` and `API: Create Profile` have lasting side effects (a Supabase\n  user and a profile row). They succeed on the first run and return \"already exists\"\n  on later runs — that's expected, and the collection stays green.\n- Teardown deletes the comment, post, and community it created, so a completed run\n  leaves the database as it found it.",
+    "description": "# superForum API — end-to-end collection\n\nA runnable, happy-path walkthrough of the superForum REST API: sign in, create a  \ncommunity, write a post and a comment, vote, read everything back, then tidy up.  \nThe folders are ordered as a full resource lifecycle, so the whole collection runs  \ntop to bottom in a single pass.\n\n## Setup\n\n1. Start the API locally — `npm run dev` (serves `http://localhost:3000`).\n    \n2. Create a Postman **environment** with three variables:\n    \n    - `baseUrl` — `http://localhost:3000/api`\n        \n    - `supabaseUrl` — your Supabase project URL (`https://.supabase.co`)\n        \n    - `supabaseKey` — the Supabase publishable / anon key\n        \n    \n    You don't set `token`, `userId`, `communityId`, `postId`, or `commentId` — the  \n    requests capture those automatically as they run.\n    \n\n## Running it\n\nRun the folders in order (Collection Runner, or top to bottom by hand) against a  \n**fresh database**:\n\n**Auth → Communities → Posts → Comments → Votes → Teardown**\n\n`Supabase: Sign-in` stores the JWT in `{{token}}`, which every authenticated request  \ninherits as a Bearer token via the collection's auth setting. Each create step saves  \nthe new record's id for the requests that follow.\n\nHeadless, via newman:\n\nnewman run superForum.postman_collection.json -e your-env.json\n\n## Notes\n\n- `Supabase: Sign-up` and `API: Create Profile` have lasting side effects (a Supabase  \n    user and a profile row). They succeed on the first run and return \"already exists\"  \n    on later runs — that's expected, and the collection stays green.\n    \n- Teardown deletes the comment, post, and community it created, so a completed run  \n    leaves the database as it found it.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-    "_exporter_id": "55891424"
+    "_exporter_id": "55891424",
+    "_collection_link": "https://go.postman.co/collection/55891424-4334e3e6-1d42-49c3-9f61-2b75293d6495?source=collection_link"
   },
   "item": [
     {
       "name": "Auth",
       "item": [
+        {
+          "name": "API: Health",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status is 200\", () => pm.response.to.have.status(200));\r\npm.test(\"database reachable\", () => pm.expect(pm.response.json().status).to.eql(\"ok\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/health",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "health"
+              ]
+            }
+          },
+          "response": []
+        },
         {
           "name": "Supabase: Sign-up",
           "event": [
@@ -178,12 +210,10 @@
             {
               "listen": "test",
               "script": {
-                "exec": [
-                  "pm.test(\"status is 200\", () => pm.response.to.have.status(200));"
-                ],
                 "type": "text/javascript",
-                "packages": {},
-                "requests": {}
+                "exec": [
+                  "pm.test(\"status is 200\", () => pm.response.to.have.status(200));\r\npm.environment.set(\"username\", pm.response.json().username);"
+                ]
               }
             }
           ],
@@ -202,19 +232,22 @@
             }
           },
           "response": []
-        },
+        }
+      ]
+    },
+    {
+      "name": "Profiles",
+      "item": [
         {
-          "name": "API: Get Profile by ID",
+          "name": "API: Get Profile",
           "event": [
             {
               "listen": "test",
               "script": {
-                "exec": [
-                  "pm.test(\"status is 200\", () => pm.response.to.have.status(200));"
-                ],
                 "type": "text/javascript",
-                "packages": {},
-                "requests": {}
+                "exec": [
+                  "pm.test(\"status is 200\", () => pm.response.to.have.status(200));\r\npm.test(\"carries reputation and counts\", () => {\r\n    const json = pm.response.json();\r\n    pm.expect(json.reputation).to.have.all.keys(\"posts\", \"comments\", \"total\");\r\n    pm.expect(json._count).to.have.all.keys(\"posts\", \"comments\");\r\n});"
+                ]
               }
             }
           ],
@@ -225,14 +258,85 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/auth/profiles/{{userId}}",
+              "raw": "{{baseUrl}}/profiles/{{username}}",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
-                "auth",
                 "profiles",
-                "{{userId}}"
+                "{{username}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "API: Get Profile Posts",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status is 200\", () => pm.response.to.have.status(200));\r\npm.test(\"paginated envelope\", () =>\r\n    pm.expect(pm.response.json()).to.have.all.keys(\"items\", \"nextCursor\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/profiles/{{username}}/posts?limit=10",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "profiles",
+                "{{username}}",
+                "posts"
+              ],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "API: Get Profile Comments",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status is 200\", () => pm.response.to.have.status(200));\r\npm.test(\"each comment names its parent post\", () => {\r\n    const items = pm.response.json().items;\r\n    if (items.length) pm.expect(items[0].post).to.have.all.keys(\"id\", \"title\");\r\n});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/profiles/{{username}}/comments?limit=10",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "profiles",
+                "{{username}}",
+                "comments"
+              ],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
               ]
             }
           },
@@ -249,28 +353,19 @@
             {
               "listen": "test",
               "script": {
-                "exec": [
-                  "pm.test(\"status is 201\", () => pm.response.to.have.status(201));\r",
-                  "\r",
-                  "const json = pm.response.json();\r",
-                  "if (pm.response.code === 201) {\r",
-                  "    pm.environment.set(\"communityId\", json.id);\r",
-                  "}"
-                ],
                 "type": "text/javascript",
-                "packages": {},
-                "requests": {}
+                "exec": [
+                  "pm.test(\"status is 201\", () => pm.response.to.have.status(201));\r\n\r\nconst json = pm.response.json();\r\nif (pm.response.code === 201) {\r\n    pm.environment.set(\"communityId\", json.id);\r\n}"
+                ]
               }
             },
             {
               "listen": "prerequest",
               "script": {
-                "exec": [
-                  ""
-                ],
                 "type": "text/javascript",
-                "packages": {},
-                "requests": {}
+                "exec": [
+                  "pm.environment.set(\"communityName\", \"postman-\" + Date.now());"
+                ]
               }
             }
           ],
@@ -279,13 +374,12 @@
             "header": [
               {
                 "key": "Content-Type",
-                "value": "application/json",
-                "type": "text"
+                "value": "application/json"
               }
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\r\n    \"name\": \"general 2\"\r\n}",
+              "raw": "{\r\n    \"name\": \"{{communityName}}\"\r\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -366,44 +460,6 @@
               "path": [
                 "communities",
                 "{{communityId}}"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "API: Get Community Posts",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test(\"status is 200\", () => pm.response.to.have.status(200));"
-                ],
-                "type": "text/javascript",
-                "packages": {},
-                "requests": {}
-              }
-            }
-          ],
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/communities/{{communityId}}/posts?limit=10",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "communities",
-                "{{communityId}}",
-                "posts"
-              ],
-              "query": [
-                {
-                  "key": "limit",
-                  "value": "10"
-                }
               ]
             }
           },
@@ -535,6 +591,44 @@
                 {
                   "key": "limit",
                   "value": "10"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "API: Get Posts (Top)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status is 200\", () => pm.response.to.have.status(200));\r\npm.test(\"ordered by score, descending\", () => {\r\n    const scores = pm.response.json().items.map((p) => p.score);\r\n    pm.expect(scores).to.eql([...scores].sort((a, b) => b - a));\r\n});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/posts?limit=10&sort=top",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "posts"
+              ],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "10"
+                },
+                {
+                  "key": "sort",
+                  "value": "top"
                 }
               ]
             }

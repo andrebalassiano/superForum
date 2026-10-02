@@ -80,9 +80,16 @@ Coverage sits around 69%. The gap is the `catch → 500` blocks, the `if (!req.u
 are deliberately left uncovered rather than chased. Functions coverage is 100%.
 
 A Postman collection (`postman/superForum.postman_collection.json`) covers the happy path by hand:
-25 requests ordered as a resource lifecycle (sign in → community → post → comment → vote → teardown),
-carrying 25 `pm.test` assertions and capturing the auth token and record ids as it goes, so it runs
-top to bottom in one pass and headless under `newman`. It is deliberately happy-path only — the
+29 requests ordered as a resource lifecycle (health → sign in → profile → community → post →
+comment → vote → teardown), carrying 33 `pm.test` assertions and capturing the auth token, the
+username and the record ids as it goes, so it runs top to bottom in one pass and headless under
+`newman`. Two details that keep a re-run working against a persistent database: `Create Community`
+builds a unique name in a pre-request script (a hardcoded one 409s on the second run, and a 409
+carries no id to capture, so every later request cascades on an empty `communityId`), and
+`Create Profile` accepts `201` or `409`. The username is captured from `GET /auth/me`, not from the
+create request's body, because uniqueness is enforced on `lower(username)` and the stored casing is
+the authoritative one. `Health` runs first so a sleeping free-tier instance wakes before anything
+asserts a status code. It is deliberately happy-path only — the
 negative paths (validation 400s, 401s, 404s, 409s, ownership 403s) live in the Vitest suite, which
 checks them on every push. The collection's job is letting a human drive the API, including the
 Supabase signup/token dance, which is the part the README alone cannot make easy.
