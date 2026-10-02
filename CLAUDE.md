@@ -81,7 +81,7 @@ are deliberately left uncovered rather than chased. Functions coverage is 100%.
 
 A Postman collection (`postman/superForum.postman_collection.json`) covers the happy path by hand:
 29 requests ordered as a resource lifecycle (health → sign in → profile → community → post →
-comment → vote → teardown), carrying 33 `pm.test` assertions and capturing the auth token, the
+comment → vote → teardown), carrying 34 `pm.test` assertions and capturing the auth token, the
 username and the record ids as it goes, so it runs top to bottom in one pass and headless under
 `newman`. Two details that keep a re-run working against a persistent database: `Create Community`
 builds a unique name in a pre-request script (a hardcoded one 409s on the second run, and a 409

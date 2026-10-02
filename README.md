@@ -69,7 +69,7 @@ The six list endpoints are cursor-paginated. Pass `?limit=` (default 20, max 100
 
 ## Try it in Postman
 
-The full request collection is in [`postman/`](postman/superForum.postman_collection.json), ordered as a resource lifecycle (health, sign in, profile, community, post, comment, vote, teardown) so it runs top to bottom in one pass, with 33 assertions along the way. Import it, then create an environment with `baseUrl` set to `http://localhost:3000/api` plus your `supabaseUrl` and `supabaseKey`. The collection captures the auth token and the record ids as it goes. It also runs headless with `newman`.
+The full request collection is in [`postman/`](postman/superForum.postman_collection.json), ordered as a resource lifecycle (health, sign in, profile, community, post, comment, vote, teardown) so it runs top to bottom in one pass, with 34 assertions along the way. Import it, then create an environment with `baseUrl` set to `http://localhost:3000/api` plus your `supabaseUrl` and `supabaseKey`. The collection captures the auth token and the record ids as it goes. It also runs headless with `newman`.
 
 ## A few decisions worth explaining
 
