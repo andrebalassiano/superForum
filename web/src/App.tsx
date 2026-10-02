@@ -3,7 +3,7 @@ import { useAuth } from './auth/AuthContext';
 import { useProfile } from './auth/useProfile';
 import Button from './components/Button';
 import { buttonClasses } from './components/buttonStyles';
-import { PlusIcon, SignOutIcon } from './components/icons';
+import { PlusIcon, SignOutIcon, UserIcon } from './components/icons';
 import FeedPage from './pages/FeedPage';
 import PostPage from './pages/PostPage';
 import CommunityPage from './pages/CommunityPage';
@@ -92,17 +92,23 @@ function App() {
                                     from a screenshot. Falls back to the email while /auth/me is in
                                     flight, and to nothing once we know there is no profile yet (the
                                     banner below covers that case). */}
-                                {profileQuery.data ? (
+                                {/* Collapses to an icon on a phone like the two actions beside
+                                    it, rather than disappearing. It replaced the email that used to
+                                    sit here, and the email was hidden on small screens because it
+                                    was long and decorative. This is neither: it's the only route to
+                                    your own profile, so hiding it removed the feature on mobile.
+                                    aria-label carries the name at every width. */}
+                                {profileQuery.data && (
                                     <Link
                                         to={`/u/${encodeURIComponent(profileQuery.data.username)}`}
-                                        className="hidden text-sm text-muted no-underline hover:text-heading sm:inline"
+                                        aria-label="Your profile"
+                                        className="flex items-center px-2 text-sm text-muted no-underline hover:text-heading sm:px-0"
                                     >
-                                        {profileQuery.data.username}
+                                        <UserIcon className="h-5 w-5 sm:hidden" />
+                                        <span className="hidden sm:inline">
+                                            {profileQuery.data.username}
+                                        </span>
                                     </Link>
-                                ) : (
-                                    <span className="hidden text-sm text-muted sm:inline">
-                                        {profileQuery.data === undefined ? user.email : null}
-                                    </span>
                                 )}
                                 <Button
                                     variant="ghost"
